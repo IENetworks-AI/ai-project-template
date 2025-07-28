@@ -1,0 +1,54 @@
+name: Model Training Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: [ "data/processed/**" ]  # Trigger after preprocessing
+  workflow_dispatch:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60       # Longer timeout for training
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"  # Updated Python version
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install dvc  # If using data version control
+
+      - name: Pull Data with DVC (Optional)
+        if: contains(env.REQUIREMENTS, 'dvc')
+        run: dvc pull || echo "DVC not configured"
+
+      - name: Train Model
+        run: python src/train.py
+
+      - name: Upload Model Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: model-artifact
+          path: |
+            models/*
+            metrics.json
+          retention-days: 7  # Auto-cleanup after 1 week
+
+      - name: Save DVC Changes
+        if: success() && contains(env.REQUIREMENTS, 'dvc')
+        run: |
+          dvc add models/
+          git add models.dvc
+          git diff --quiet && git diff --staged --quiet || \
+          (git commit -m "[Automated] Update model artifacts" && git push && dvc push)
