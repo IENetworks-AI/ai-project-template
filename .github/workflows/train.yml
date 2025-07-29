@@ -24,7 +24,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download features from preprocess job (optional)
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: features-csv
         path: data/features
@@ -36,7 +36,7 @@ jobs:
       run: python src/evaluate.py
 
     - name: Upload trained model
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: trained-model
         path: models/model.pkl
