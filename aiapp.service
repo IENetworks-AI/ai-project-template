@@ -5,8 +5,11 @@ After=network.target
 [Service]
 User=ubuntu
 WorkingDirectory=/home/ubuntu/ai-project-template
+Environment="PATH=/home/ubuntu/ai-project-template/venv/bin"
 ExecStart=/home/ubuntu/ai-project-template/venv/bin/python app.py
 Restart=always
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
