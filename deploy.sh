@@ -33,3 +33,11 @@ else
 fi
 
 echo "✅ Deployment finished."
+# Copy systemd service
+sudo cp aiapp.service /etc/systemd/system/aiapp.service
+
+# Reload systemd and enable + start the service
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable aiapp
+sudo systemctl restart aiapp

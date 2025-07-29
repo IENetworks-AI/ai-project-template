@@ -1,0 +1,12 @@
+[Unit]
+Description=AI App Flask Service
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ai-project-template
+ExecStart=/home/ubuntu/ai-project-template/venv/bin/python app.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
