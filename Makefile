@@ -1,11 +1,14 @@
-install:
+setup:
 	pip install -r requirements.txt
 
-preprocess:
+extract:
 	python src/preprocess.py
+
+features:
+	python src/feature_engineering.py
 
 train:
 	python src/train.py
 
-test:
-	pytest tests/
+evaluate:
+	python src/evaluate.py
