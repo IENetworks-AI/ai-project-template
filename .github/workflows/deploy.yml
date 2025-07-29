@@ -1,0 +1,25 @@
+name: Deploy to Oracle Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ORACLE_SSH_KEY }}" > ~/.ssh/oracle.key
+          chmod 600 ~/.ssh/oracle.key
+          ssh-keyscan 139.185.33.139 >> ~/.ssh/known_hosts
+
+      - name: Deploy Code to Oracle
+        run: |
+          ssh -i ~/.ssh/oracle.key ubuntu@139.185.33.139 'bash -s' < ./deploy.sh
