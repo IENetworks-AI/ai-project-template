@@ -21,22 +21,10 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-
-    # - name: Download features from preprocess job (optional, for future use)
-    #   uses: actions/download-artifact@v4
-    #   with:
-    #     name: features-csv
-    #     path: data/features
+        pip install pandas scikit-learn joblib
 
     - name: Train model
       run: python src/train.py
 
     - name: Evaluate model
       run: python src/evaluate.py
-
-    - name: Upload trained model
-      uses: actions/upload-artifact@v4
-      with:
-        name: trained-model
-        path: models/model.pkl

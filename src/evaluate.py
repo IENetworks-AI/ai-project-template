@@ -1,18 +1,18 @@
-import pandas as pd
+# src/evaluate.py
 import joblib
-from sklearn.metrics import mean_absolute_error
-import os
+from sklearn.datasets import load_iris
+from sklearn.metrics import accuracy_score
 
 def evaluate_model():
-    df = pd.read_csv("data/features/features.csv")
-    model = joblib.load("models/model.pkl")
-    
-    X = df[['amount_log']]
-    y = df['amount']
+    iris = load_iris(as_frame=True)
+    df = iris.frame
+    X = df.drop(columns=["target"])
+    y = df["target"]
 
-    preds = model.predict(X)
-    mae = mean_absolute_error(y, preds)
-    print(f"MAE: {mae:.2f}")
+    model = joblib.load("models/model.pkl")
+    y_pred = model.predict(X)
+    accuracy = accuracy_score(y, y_pred)
+    print(f"Accuracy on Iris dataset: {accuracy:.2f}")
 
 if __name__ == "__main__":
     evaluate_model()

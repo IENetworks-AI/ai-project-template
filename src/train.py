@@ -1,21 +1,21 @@
+# src/train.py
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_iris
+from sklearn.ensemble import RandomForestClassifier
 import joblib
-import os
 
 def train_model():
-    df = pd.read_csv("data/features/features.csv")
-    
-    X = df[['amount_log']]
-    y = df['amount']
+    print("Loading example dataset (Iris)...")
+    iris = load_iris(as_frame=True)
+    df = iris.frame
+    X = df.drop(columns=["target"])
+    y = df["target"]
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    print("Training model...")
+    model = RandomForestClassifier()
+    model.fit(X, y)
 
-    model = RandomForestRegressor()
-    model.fit(X_train, y_train)
-
-    os.makedirs("models", exist_ok=True)
+    print("Saving model...")
     joblib.dump(model, "models/model.pkl")
 
 if __name__ == "__main__":
