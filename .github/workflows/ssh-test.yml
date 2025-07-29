@@ -16,8 +16,8 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.ORACLE_SSH_KEY }}" > ~/.ssh/oracle.key
           chmod 600 ~/.ssh/oracle.key
-          ssh-keyscan 139.185.33.139 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 139.185.33.139 >> ~/.ssh/known_hosts
 
       - name: Test SSH Connection
         run: |
-          ssh -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ Connected to Oracle Server'; uname -a"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ Connected to Oracle Server'; uname -a"
