@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return jsonify({"message": "Flask app is running on port 5050"})
+    return jsonify({"message": "Flask app is running on port 80"})
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -13,4 +13,4 @@ def predict():
     return jsonify(result)
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5050)
+    app.run(host='0.0.0.0', port=80)
