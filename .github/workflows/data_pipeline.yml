@@ -119,7 +119,7 @@ jobs:
 
       - name: Ensure rsync is installed
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "sudo apt-get update && sudo apt-get install -y rsync"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "sudo killall apt apt-get || true; sudo rm -f /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/dpkg/lock* || true; sudo apt-get update && sudo apt-get install -y rsync"
 
       - name: Deploy to Oracle Cloud
         run: |

@@ -118,4 +118,30 @@ python check_dependencies.py
 ### Install Dependencies
 ```bash
 pip install -r requirements.txt
+```
+
+## Server Maintenance
+
+### Handle Common Issues
+```bash
+# Fix apt locks (common issue)
+chmod +x server_maintenance.sh
+./server_maintenance.sh locks
+
+# Run full maintenance
+./server_maintenance.sh all
+
+# Interactive maintenance menu
+./server_maintenance.sh
+```
+
+### Quick Fixes
+```bash
+# Fix apt locks manually
+sudo killall apt apt-get || true
+sudo rm -f /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/dpkg/lock* || true
+
+# Restart services
+sudo systemctl restart aiapp
+sudo systemctl status aiapp
 ``` 
