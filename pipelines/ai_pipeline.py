@@ -44,6 +44,7 @@ def main():
         
         # Step 3: Train model
         logger.info("Step 3: Training model")
+        logger.info(f"Training data shape: X={transformed_data['X_train_scaled'].shape}, y={transformed_data['y_train'].shape}")
         model_results = train_model(
             X_train=transformed_data['X_train_scaled'],
             y_train=transformed_data['y_train'],
@@ -56,6 +57,7 @@ def main():
         
         # Step 4: Evaluate model
         logger.info("Step 4: Evaluating model")
+        logger.info(f"Test data shape: X={transformed_data['X_test_scaled'].shape}, y={transformed_data['y_test'].shape}")
         evaluation_results = evaluate_model(
             model=model_results['model'],
             X_test=transformed_data['X_test_scaled'],
@@ -66,10 +68,13 @@ def main():
         # Step 5: Save results
         logger.info("Step 5: Saving results")
         
-        # Save processed features
+        # Save processed features (without target column)
         features_df = transformed_data['X_train'].copy()
-        features_df['target'] = transformed_data['y_train']
         save_to_csv(features_df, config['features_path'])
+        
+        # Save target separately if needed
+        target_df = pd.DataFrame({'target': transformed_data['y_train']})
+        save_to_csv(target_df, 'data/processed/target.csv')
         
         # Save model
         save_model(model_results['model'], 'trained_model', config)
