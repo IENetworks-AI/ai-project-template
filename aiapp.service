@@ -6,7 +6,7 @@ After=network.target
 User=ubuntu
 WorkingDirectory=/home/ubuntu/ai-project-template
 Environment="PATH=/home/ubuntu/ai-project-template/venv/bin"
-ExecStart=/home/ubuntu/ai-project-template/venv/bin/python app.py
+ExecStart=/home/ubuntu/ai-project-template/venv/bin/python3 app.py
 Restart=always
 StandardOutput=journal
 StandardError=journal
