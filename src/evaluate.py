@@ -2,17 +2,41 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import yaml
-import joblib
-from src.data.evaluate_model import evaluate_model
-from src.utils.logging import get_logger
+# Handle missing dependencies gracefully
+try:
+    import yaml
+    import joblib
+except ImportError as e:
+    print(f"❌ Missing dependency: {e}")
+    print("Please run: pip install -r requirements.txt")
+    sys.exit(1)
+
+try:
+    from src.data.evaluate_model import evaluate_model
+    from src.utils.logging import get_logger
+except ImportError as e:
+    print(f"❌ Import error: {e}")
+    print("Please ensure all dependencies are installed: pip install -r requirements.txt")
+    sys.exit(1)
 
 logger = get_logger('evaluate_script')
 
 def load_config():
     """Load configuration from config.yaml"""
-    with open('config/config.yaml', 'r') as f:
-        return yaml.safe_load(f)
+    try:
+        with open('config/config.yaml', 'r') as f:
+            return yaml.safe_load(f)
+    except FileNotFoundError:
+        logger.warning("Config file not found, using default configuration")
+        return {
+            'model': {
+                'test_size': 0.2,
+                'random_state': 42
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error loading config: {e}")
+        return None
 
 def main():
     """Main evaluation script"""

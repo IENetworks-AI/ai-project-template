@@ -104,6 +104,18 @@ chmod +x run_tests.sh
 ```bash
 cd ~/ai-project-template
 source venv/bin/activate
-pip install pytest pandas pyyaml
+pip install -r requirements.txt
 python -m pytest tests/ -v
+```
+
+## Dependency Management
+
+### Check Dependencies
+```bash
+python check_dependencies.py
+```
+
+### Install Dependencies
+```bash
+pip install -r requirements.txt
 ``` 
