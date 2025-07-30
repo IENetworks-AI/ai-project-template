@@ -36,7 +36,7 @@ ubuntu
 
 ### 4. SSH_TARGET_DIR
 ```
-/home/ubuntu/ai-project
+/home/ubuntu/ai-project-template
 ```
 
 ## 🛠️ Server Preparation
@@ -59,8 +59,8 @@ sudo apt install libaio1 -y
 ### 2. Setup Project Directory
 ```bash
 # Create project directory
-mkdir -p /home/ubuntu/ai-project
-cd /home/ubuntu/ai-project
+mkdir -p /home/ubuntu/ai-project-template
+cd /home/ubuntu/ai-project-template
 
 # Clone your repository
 git clone https://github.com/your-username/your-repo.git .
@@ -104,9 +104,9 @@ After=network.target
 [Service]
 Type=simple
 User=ubuntu
-WorkingDirectory=/home/ubuntu/ai-project
-Environment=PATH=/home/ubuntu/ai-project/venv/bin
-ExecStart=/home/ubuntu/ai-project/venv/bin/python api/app.py
+WorkingDirectory=/home/ubuntu/ai-project-template
+Environment=PATH=/home/ubuntu/ai-project-template/venv/bin
+ExecStart=/home/ubuntu/ai-project-template/venv/bin/python api/app.py
 Restart=always
 RestartSec=10
 
@@ -143,7 +143,7 @@ cd ai-project-template
 python pipelines/ai_pipeline.py
 
 # Deploy to server
-rsync -avz --delete ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project/
+rsync -avz --delete ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
 
 # SSH to server and restart service
 ssh ubuntu@139.185.33.139 "sudo systemctl restart oracle-ai-api"
@@ -174,7 +174,7 @@ curl http://139.185.33.139:5000/model/info
 sudo journalctl -u oracle-ai-api -f
 
 # Application logs
-tail -f /home/ubuntu/ai-project/logs/*.log
+tail -f /home/ubuntu/ai-project-template/logs/*.log
 ```
 
 ## 🔧 Configuration
@@ -195,7 +195,7 @@ database:
 oracle_server:
   host: "139.185.33.139"
   user: "ubuntu"
-  target_dir: "/home/ubuntu/ai-project"
+  target_dir: "/home/ubuntu/ai-project-template"
 ```
 
 ## 🚨 Troubleshooting
@@ -233,7 +233,7 @@ oracle_server:
    sudo journalctl -u oracle-ai-api -n 50
    
    # Check file permissions
-   ls -la /home/ubuntu/ai-project/
+ls -la /home/ubuntu/ai-project-template/
    ```
 
 ### Debug Commands

@@ -1,20 +1,34 @@
+"""
+Logging utilities for Retail Sales Insight Pipeline
+"""
 import logging
 import os
 from datetime import datetime
 
-def get_logger(name, log_level=logging.INFO):
-    """Create and configure a logger"""
+def get_logger(name: str) -> logging.Logger:
+    """
+    Get a configured logger for the application
     
+    Args:
+        name: Logger name
+        
+    Returns:
+        Configured logger instance
+    """
     # Create logs directory if it doesn't exist
-    os.makedirs('logs', exist_ok=True)
+    logs_dir = 'logs'
+    if not os.path.exists(logs_dir):
+        os.makedirs(logs_dir)
     
     # Create logger
     logger = logging.getLogger(name)
-    logger.setLevel(log_level)
     
     # Avoid adding handlers if they already exist
     if logger.handlers:
         return logger
+    
+    # Set log level
+    logger.setLevel(logging.INFO)
     
     # Create formatter
     formatter = logging.Formatter(
@@ -22,14 +36,14 @@ def get_logger(name, log_level=logging.INFO):
     )
     
     # Create file handler
-    log_file = f"logs/{name}_{datetime.now().strftime('%Y%m%d')}.log"
+    log_file = os.path.join(logs_dir, f'{name}_{datetime.now().strftime("%Y%m%d")}.log')
     file_handler = logging.FileHandler(log_file)
-    file_handler.setLevel(log_level)
+    file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter)
     
     # Create console handler
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(log_level)
+    console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
     
     # Add handlers to logger

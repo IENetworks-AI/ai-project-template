@@ -1,36 +1,37 @@
-# Oracle AI Project Configuration
-# Oracle Cloud Infrastructure Settings
+# Retail Sales Insight & Top Category Dashboard Configuration
+
+# Data Paths
+data_paths:
+  raw_data_path: "data/raw/"
+  processed_data_path: "data/processed/"
+  output_file: "data/processed/sales_insights.csv"
+
+# Business Logic Settings
+business_logic:
+  category_threshold: 1000  # Minimum sales amount to be considered "top category"
+  top_categories_limit: 5   # Number of top categories to return
+
+# API Configuration
+api:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false
+
+# Oracle Cloud Deployment
 oracle_server:
   host: "139.185.33.139"
   user: "ubuntu"
   target_dir: "/home/ubuntu/ai-project-template"
 
-# Data Paths
-raw_data_path: "data/raw/"
-processed_data_path: "data/processed/"
-features_path: "data/processed/features.csv"
-models_path: "data/processed/models/"
+# Data Validation
+data_validation:
+  required_columns: ["Date", "Product Category", "Total Amount"]
+  expected_dtypes:
+    Date: "object"
+    Product Category: "object"
+    Total Amount: "float64"
 
-# Model Configuration
-model:
-  test_size: 0.2
-  random_state: 42
-  cv_folds: 5
-
-# Oracle Database Configuration (if using cx_Oracle)
-database:
-  host: "localhost"  # Update with your Oracle DB host
-  port: 1521
-  service_name: "ORCL"  # Update with your service name
-  username: "your_username"  # Update with your DB username
-  password: "your_password"  # Update with your DB password
-
-# Feature Engineering Settings
-feature_engineering:
-  min_features: 5
-  correlation_threshold: 0.8
-
-# Training Settings
-training:
-  max_iter: 1000
-  tolerance: 1e-4 
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s" 

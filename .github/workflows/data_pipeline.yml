@@ -1,4 +1,4 @@
-name: Oracle AI Pipeline CI/CD
+name: Retail Sales Insight Pipeline
 
 on:
   push:
@@ -9,81 +9,122 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run tests
+      run: |
+        python -m pytest tests/ -v
+    
+    - name: Test data pipeline
+      run: |
+        python pipelines/data_pipeline.py
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run tests
-        run: |
-          python -m pytest tests/ -v
-
-  preprocess:
+  process:
     needs: test
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Create sample data
+      run: |
+        mkdir -p data/raw
+        python -c "
+import pandas as pd
+import os
+sample_data = pd.DataFrame({
+    'Date': ['2023-01-01', '2023-01-02', '2023-01-03', '2023-01-04'],
+    'Product Category': ['Electronics', 'Clothing', 'Electronics', 'Beauty'],
+    'Total Amount': [1500.0, 800.0, 2000.0, 600.0],
+    'Customer ID': ['C001', 'C002', 'C003', 'C004']
+})
+sample_data.to_csv('data/raw/sample_sales.csv', index=False)
+print('Sample data created')
+"
+    
+    - name: Run data pipeline
+      run: |
+        python pipelines/data_pipeline.py
+    
+    - name: Archive processed data
+      uses: actions/upload-artifact@v4
+      with:
+        name: processed-data
+        path: data/processed/
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run data preprocessing
-        run: |
-          python pipelines/ai_pipeline.py
-
-      - name: Archive processed data
-        uses: actions/upload-artifact@v4
-        with:
-          name: processed-data
-          path: data/processed/
-
-  train:
-    needs: preprocess
+  deploy:
+    needs: process
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Download processed data
-        uses: actions/download-artifact@v4
-        with:
-          name: processed-data
-          path: data/processed/
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Train and evaluate models
-        run: |
-          python pipelines/ai_pipeline.py
-
-      - name: Archive models and results
-        uses: actions/upload-artifact@v4
-        with:
-          name: models-and-results
-          path: |
-            data/processed/models/
-            data/processed/evaluation_results.csv
-            data/processed/evaluation_report.txt
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Download processed data
+      uses: actions/download-artifact@v4
+      with:
+        name: processed-data
+        path: data/processed/
+    
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.ORACLE_SSH_KEY }}" > ~/.ssh/oracle.key
+        chmod 600 ~/.ssh/oracle.key
+        ssh-keyscan -H 139.185.33.139 >> ~/.ssh/known_hosts
+    
+    - name: Test SSH Connection
+      run: |
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ SSH connection successful'; uname -a"
+    
+    - name: Ensure rsync is installed
+      run: |
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+          echo "Waiting for apt lock to be released..."
+          while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+            sleep 5
+          done
+          sudo apt-get update
+          sudo apt-get install -y rsync
+        EOF
+    
+    - name: Deploy to Oracle Cloud
+      run: |
+        rsync -avz --delete -e "ssh -i ~/.ssh/oracle.key -o StrictHostKeyChecking=no" ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
+    
+    - name: Restart API service
+      run: |
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "cd /home/ubuntu/ai-project-template && sudo systemctl restart retail-sales-api"
 

@@ -1,18 +1,12 @@
-# Core ML/AI packages
+# Core dependencies for Retail Sales Insight Pipeline
+flask>=3.0.0
+pandas>=2.0.0
+PyYAML>=6.0
+pytest>=7.0.0
+requests>=2.31.0
+
+# Oracle database connection (if needed)
 cx_Oracle==8.3
-pandas
-scikit-learn
-joblib
 
-# Web API and configuration
-flask
-PyYAML
-
-# Testing and development
-pytest
-requests
-
-# Data processing and utilities
-numpy
-matplotlib
-seaborn
+# Development and testing
+python-dotenv>=1.0.0

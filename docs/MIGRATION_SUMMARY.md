@@ -93,7 +93,7 @@ ai-project-template/
 - `SSH_PRIVATE_KEY` - Your SSH private key
 - `SSH_USER` - `ubuntu`
 - `SSH_HOST` - `139.185.33.139`
-- `SSH_TARGET_DIR` - `/home/ubuntu/ai-project`
+- `SSH_TARGET_DIR` - `/home/ubuntu/ai-project-template`
 
 ## 📁 File Migrations
 
