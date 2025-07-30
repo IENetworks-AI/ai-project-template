@@ -119,7 +119,14 @@ jobs:
 
       - name: Ensure rsync is installed
         run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "sudo apt-get update && sudo apt-get install -y rsync"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "Waiting for apt lock to be released..."
+            while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+              sleep 5
+            done
+            sudo apt-get update
+            sudo apt-get install -y rsync
+          EOF
 
       - name: Deploy to Oracle Cloud
         run: |
