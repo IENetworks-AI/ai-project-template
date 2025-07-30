@@ -37,7 +37,13 @@ The error you encountered was because `rsync` wasn't installed on the GitHub Act
 - Manual trigger available
 - Includes apt lock handling
 
-### 4. **Deploy with Artifacts** (`deploy-with-artifacts.yml`)
+### 4. **Simple Deploy (Alternative)** (`deploy-simple.yml`)
+**Use this if rsync fails**
+- Manual trigger only
+- Uses scp + tar instead of rsync
+- More reliable but slower
+
+### 5. **Deploy with Artifacts** (`deploy-with-artifacts.yml`)
 **Use this for deployments with models**
 - Triggers after successful data pipeline
 - Manual trigger available
@@ -58,6 +64,7 @@ If the test shows issues:
 
 ### Step 3: Deploy
 - **Simple deployment**: Run `deploy.yml`
+- **If rsync fails**: Run `deploy-simple.yml` (uses scp + tar)
 - **Deployment with models**: Run `deploy-with-artifacts.yml`
 
 ## 🚨 Common Commands
@@ -104,6 +111,7 @@ sudo journalctl -u aiapp -f
 | Issue | Solution |
 |-------|----------|
 | rsync not found | ✅ Fixed - workflows now install rsync on runner |
+| rsync still failing | Use `deploy-simple.yml` (scp + tar method) |
 | apt locks | Run `server-maintenance.yml` → `fix-locks` |
 | service not starting | Run `server-maintenance.yml` → `restart-services` |
 | SSH connection failed | Check SSH key in GitHub secrets |

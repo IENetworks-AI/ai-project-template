@@ -31,14 +31,19 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y rsync -qq
           echo "✅ rsync installed successfully"
-          rsync --version
-
-      - name: Verify rsync is working
-        run: |
-          echo "🔍 Verifying rsync functionality..."
-          which rsync
-          rsync --version | head -1
-          echo "✅ rsync is ready for deployment"
+          
+          # Verify installation
+          echo "🔍 Verifying rsync installation..."
+          which rsync || echo "rsync not found in PATH"
+          rsync --version || echo "rsync command failed"
+          
+          # Check if rsync is in PATH
+          echo "📋 PATH: $PATH"
+          echo "📋 rsync location: $(which rsync 2>/dev/null || echo 'not found')"
+          
+          # Try to find rsync in common locations
+          ls -la /usr/bin/rsync 2>/dev/null || echo "rsync not in /usr/bin"
+          ls -la /bin/rsync 2>/dev/null || echo "rsync not in /bin"
 
       - name: Deploy Code to Oracle
         run: |
@@ -46,12 +51,21 @@ jobs:
           echo "📁 Current directory: $(pwd)"
           echo "📋 Files to deploy:"
           ls -la | head -10
+          
+          # Find rsync and use full path if needed
+          RSYNC_CMD=$(which rsync 2>/dev/null || echo "/usr/bin/rsync")
+          echo "🔄 Using rsync command: $RSYNC_CMD"
+          
+          # Test rsync command
+          $RSYNC_CMD --version || echo "rsync command failed"
+          
           echo "🔄 Running rsync command..."
-          rsync -avz --delete -e "ssh -i ~/.ssh/oracle.key -o StrictHostKeyChecking=no" ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
+          $RSYNC_CMD -avz --delete -e "ssh -i ~/.ssh/oracle.key -o StrictHostKeyChecking=no" ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
           echo "✅ Code deployment completed"
 
       - name: Run deployment script
         run: |
+        
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "cd /home/ubuntu/ai-project-template && chmod +x deploy.sh && ./deploy.sh"
 
       - name: Verify deployment
