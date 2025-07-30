@@ -3,7 +3,7 @@
 ## 🚀 Immediate Actions
 
 ### For the Current rsync Error
-The error you encountered was because `rsync` wasn't installed on the GitHub Actions runner. This has been fixed in all deployment workflows. The workflow now properly installs rsync on the runner before using it.
+The error you encountered was because `rsync` wasn't installed on the **Oracle server**. The GitHub Actions runner had rsync, but the server didn't. This has been fixed by adding rsync installation to the server in all deployment workflows.
 
 ### Current Workflow Status
 ✅ **Fixed Issues**:
@@ -12,10 +12,10 @@ The error you encountered was because `rsync` wasn't installed on the GitHub Act
 - Separate workflow files created
 - Enhanced error handling with retries
 
-⚠️ **Current Issue**: rsync command not found error still occurring
-- Added debug workflow to diagnose the exact issue
-- Enhanced rsync installation with better error handling
-- Added verification steps to ensure rsync is working
+✅ **Issue Resolved**: rsync command not found error was due to missing rsync on server
+- Added rsync installation step for the Oracle server
+- Enhanced apt lock handling on server
+- Added verification steps to ensure rsync is working on both runner and server
 
 ## 📋 Available Workflows
 
@@ -110,7 +110,7 @@ sudo journalctl -u aiapp -f
 
 | Issue | Solution |
 |-------|----------|
-| rsync not found | ✅ Fixed - workflows now install rsync on runner |
+| rsync not found | ✅ Fixed - workflows now install rsync on both runner and server |
 | rsync still failing | Use `deploy-simple.yml` (scp + tar method) |
 | apt locks | Run `server-maintenance.yml` → `fix-locks` |
 | service not starting | Run `server-maintenance.yml` → `restart-services` |

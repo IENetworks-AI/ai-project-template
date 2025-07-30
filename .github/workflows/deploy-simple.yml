@@ -22,6 +22,22 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ SSH connection successful'; uname -a"
 
+      - name: Ensure server has required tools
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "🔧 Ensuring server has required tools..."
+            
+            # Handle apt locks if needed
+            sudo killall apt apt-get || true
+            sudo rm -f /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/dpkg/lock* /var/lib/dpkg/lock-frontend || true
+            
+            # Update and install required packages
+            sudo apt-get update -qq
+            sudo apt-get install -y tar gzip curl -qq
+            
+            echo "✅ Server tools verified"
+          EOF
+
       - name: Create deployment archive
         run: |
           echo "📦 Creating deployment archive..."

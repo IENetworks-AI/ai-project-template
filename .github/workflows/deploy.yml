@@ -25,6 +25,26 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ SSH connection successful'; uname -a"
 
+      - name: Install rsync on server
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "🔧 Installing rsync on Oracle server..."
+            
+            # Handle apt locks if needed
+            sudo killall apt apt-get || true
+            sudo rm -f /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/dpkg/lock* /var/lib/dpkg/lock-frontend || true
+            
+            # Update and install rsync
+            sudo apt-get update -qq
+            sudo apt-get install -y rsync -qq
+            
+            # Verify installation
+            echo "🔍 Verifying rsync installation on server..."
+            which rsync
+            rsync --version | head -1
+            echo "✅ rsync installed successfully on server"
+          EOF
+
       - name: Install rsync on runner
         run: |
           echo "🔧 Installing rsync on GitHub Actions runner..."
