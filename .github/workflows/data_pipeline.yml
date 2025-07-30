@@ -109,16 +109,16 @@ jobs:
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.8.0
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh-private-key: ${{ secrets.ORACLE_SSH_KEY }}
       
       - name: Deploy to Oracle Cloud
         run: |
-          rsync -avz --delete ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_TARGET_DIR }}
+          rsync -avz --delete ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
         env:
           SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
       
       - name: Restart API service
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo systemctl restart oracle-ai-api"
+          ssh -o StrictHostKeyChecking=no ubuntu@139.185.33.139 "cd /home/ubuntu/ai-project-template && sudo systemctl restart aiapp"
         env:
           SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }} 
