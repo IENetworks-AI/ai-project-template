@@ -106,19 +106,21 @@ jobs:
           name: processed-data
           path: data/processed/
       
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.ORACLE_SSH_KEY }}
-      
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ORACLE_SSH_KEY }}" > ~/.ssh/oracle.key
+          chmod 600 ~/.ssh/oracle.key
+          ssh-keyscan -H 139.185.33.139 >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ SSH connection successful'; uname -a"
+
       - name: Deploy to Oracle Cloud
         run: |
-          rsync -avz --delete ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
-        env:
-          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
-      
+          rsync -avz --delete -e "ssh -i ~/.ssh/oracle.key -o StrictHostKeyChecking=no" ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
+
       - name: Restart API service
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@139.185.33.139 "cd /home/ubuntu/ai-project-template && sudo systemctl restart aiapp"
-        env:
-          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }} 
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "cd /home/ubuntu/ai-project-template && sudo systemctl restart aiapp" 

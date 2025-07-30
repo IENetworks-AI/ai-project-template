@@ -6,6 +6,8 @@
 - ✅ **Fixed deprecated `actions/upload-artifact@v3`** → Updated to `@v4`
 - ✅ **Fixed deprecated `actions/download-artifact@v3`** → Updated to `@v4`
 - ✅ **Fixed SSH key configuration** → Updated to use `ORACLE_SSH_KEY` secret
+- ✅ **Fixed SSH host key verification** → Added proper SSH setup and host key scanning
+- ✅ **Fixed rsync deployment** → Updated to use proper SSH options for rsync
 - ✅ **Fixed deployment paths** → Aligned with server directory structure
 
 ### 2. **Data Pipeline Issues**
@@ -42,6 +44,8 @@ aiapp.service                 # Updated to use python3 and correct paths
 deploy.sh                     # Updated with proper directory navigation
 start.sh                      # New startup script for direct execution
 run_tests.sh                  # New test runner script
+check_dependencies.py         # New dependency checker script
+test_deployment.py           # New deployment test script
 ```
 
 ## 🔄 Workflow Alignment
@@ -134,8 +138,9 @@ run_tests.sh                  # New test runner script
 
 ### **For CI/CD**
 1. Ensure `ORACLE_SSH_KEY` secret is configured in GitHub
-2. Push to main branch to trigger deployment
-3. Monitor workflow execution in GitHub Actions
+2. Run deployment test: `python test_deployment.py`
+3. Push to main branch to trigger deployment
+4. Monitor workflow execution in GitHub Actions
 
 ## ✅ Verification Checklist
 
