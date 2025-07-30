@@ -97,20 +97,27 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
             echo "🔍 Verifying deployment..."
             
-            # Check if service is running
-            if sudo systemctl is-active --quiet aiapp; then
-              echo "✅ aiapp service is running"
-              sudo systemctl status aiapp --no-pager -l
-            else
+            # Run debug script if service is not running
+            if ! sudo systemctl is-active --quiet aiapp; then
               echo "❌ aiapp service is not running"
-              sudo systemctl status aiapp --no-pager -l
+              echo "🔧 Running debug script..."
+              cd /home/ubuntu/ai-project-template
+              chmod +x debug_service.sh
+              ./debug_service.sh
               exit 1
             fi
+            
+            echo "✅ aiapp service is running"
+            sudo systemctl status aiapp --no-pager -l
             
             # Check if app is responding
             if curl -f http://localhost:5000/health 2>/dev/null; then
               echo "✅ Application is responding"
             else
               echo "⚠️ Application health check failed"
+              echo "🔧 Running debug script..."
+              cd /home/ubuntu/ai-project-template
+              chmod +x debug_service.sh
+              ./debug_service.sh
             fi
           EOF
