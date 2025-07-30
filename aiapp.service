@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 User=ubuntu
-WorkingDirectory=/home/ubuntu/ai-project-template
+WorkingDirectory=/home/ubuntu/ai-project-template/api
 Environment="PATH=/home/ubuntu/ai-project-template/venv/bin"
 ExecStart=/home/ubuntu/ai-project-template/venv/bin/python3 app.py
 Restart=always

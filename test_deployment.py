@@ -1,176 +1,137 @@
 #!/usr/bin/env python3
 """
-Deployment Test Script
-Tests SSH connectivity and deployment readiness
+Test script to debug deployment issues
 """
-
 import os
-import subprocess
 import sys
+import subprocess
+import time
 
-def run_command(command, description):
-    """Run a command and return success status"""
-    print(f"🔧 {description}...")
+def test_app_startup():
+    """Test if the app can start without errors"""
+    print("🔍 Testing app startup...")
+    
+    # Test if we can import the app
     try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
-        if result.returncode == 0:
-            print(f"✅ {description} - SUCCESS")
-            if result.stdout.strip():
-                print(f"   Output: {result.stdout.strip()}")
-            return True
-        else:
-            print(f"❌ {description} - FAILED")
-            print(f"   Error: {result.stderr.strip()}")
-            return False
-    except subprocess.TimeoutExpired:
-        print(f"❌ {description} - TIMEOUT")
-        return False
+        sys.path.append(os.path.join(os.getcwd(), 'api'))
+        from api.app import app
+        print("✅ App imports successfully")
     except Exception as e:
-        print(f"❌ {description} - ERROR: {e}")
+        print(f"❌ App import failed: {e}")
         return False
-
-def check_ssh_key():
-    """Check if SSH key is available"""
-    print("\n🔑 Checking SSH Key...")
     
-    # Check if we're in a GitHub Actions environment
-    if os.getenv('GITHUB_ACTIONS'):
-        print("✅ Running in GitHub Actions environment")
-        ssh_key = os.getenv('ORACLE_SSH_KEY')
-        if ssh_key:
-            print("✅ ORACLE_SSH_KEY secret is available")
+    # Test if we can start the app in a subprocess
+    try:
+        # Change to api directory
+        api_dir = os.path.join(os.getcwd(), 'api')
+        os.chdir(api_dir)
+        
+        # Start app in background
+        process = subprocess.Popen(
+            [sys.executable, 'app.py'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        # Wait a bit for startup
+        time.sleep(3)
+        
+        # Check if process is still running
+        if process.poll() is None:
+            print("✅ App started successfully")
+            process.terminate()
+            process.wait()
             return True
         else:
-            print("❌ ORACLE_SSH_KEY secret is not available")
+            stdout, stderr = process.communicate()
+            print(f"❌ App failed to start")
+            print(f"STDOUT: {stdout}")
+            print(f"STDERR: {stderr}")
             return False
-    else:
-        print("⚠️  Not in GitHub Actions environment")
-        print("   This script is designed for CI/CD testing")
+            
+    except Exception as e:
+        print(f"❌ App startup test failed: {e}")
         return False
 
-def test_ssh_connection():
-    """Test SSH connection to the server"""
-    print("\n🌐 Testing SSH Connection...")
+def test_dependencies():
+    """Test if all required dependencies are available"""
+    print("🔍 Testing dependencies...")
     
-    # Test basic connectivity
-    ping_result = run_command(
-        "ping -c 1 139.185.33.139",
-        "Ping server"
-    )
-    
-    if not ping_result:
-        print("❌ Cannot reach server - check network connectivity")
-        return False
-    
-    # Test SSH connection (if we have the key)
-    if check_ssh_key():
-        ssh_result = run_command(
-            "ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 -i ~/.ssh/oracle.key ubuntu@139.185.33.139 'echo \"SSH connection successful\"'",
-            "SSH connection test"
-        )
-        return ssh_result
-    
-    return True
-
-def check_deployment_files():
-    """Check if deployment files exist"""
-    print("\n📁 Checking Deployment Files...")
-    
-    required_files = [
-        "deploy.sh",
-        "start.sh", 
-        "aiapp.service",
-        "app.py",
-        "requirements.txt",
-        "config/config.yaml"
+    required_packages = [
+        'flask',
+        'pandas', 
+        'yaml',
+        'joblib',
+        'sklearn'
     ]
     
-    missing_files = []
-    for file_path in required_files:
-        if os.path.exists(file_path):
-            print(f"✅ {file_path}")
-        else:
-            print(f"❌ {file_path} - MISSING")
-            missing_files.append(file_path)
+    missing = []
+    for package in required_packages:
+        try:
+            __import__(package)
+            print(f"✅ {package} available")
+        except ImportError:
+            print(f"❌ {package} missing")
+            missing.append(package)
     
-    if missing_files:
-        print(f"\n❌ Missing {len(missing_files)} required files for deployment")
+    if missing:
+        print(f"❌ Missing packages: {missing}")
         return False
     else:
-        print("\n✅ All deployment files are present")
+        print("✅ All dependencies available")
         return True
 
-def check_python_environment():
-    """Check Python environment"""
-    print("\n🐍 Checking Python Environment...")
+def test_config():
+    """Test if configuration files exist"""
+    print("🔍 Testing configuration...")
     
-    # Check Python version
-    python_result = run_command(
-        "python --version",
-        "Python version check"
-    )
-    
-    # Check if requirements.txt exists and can be parsed
-    if os.path.exists("requirements.txt"):
-        print("✅ requirements.txt exists")
-        
-        # Try to install dependencies (dry run)
-        pip_result = run_command(
-            "pip install --dry-run -r requirements.txt",
-            "Dependencies check"
-        )
-    else:
-        print("❌ requirements.txt missing")
-        return False
-    
-    return python_result
-
-def main():
-    """Main deployment test function"""
-    print("🚀 Deployment Readiness Test")
-    print("=" * 50)
-    
-    tests = [
-        ("Deployment Files", check_deployment_files),
-        ("Python Environment", check_python_environment),
-        ("SSH Connectivity", test_ssh_connection)
+    config_files = [
+        'config/config.yaml',
+        'api/app.py',
+        'api/routes.py'
     ]
     
-    results = []
-    for test_name, test_func in tests:
-        print(f"\n{'='*20} {test_name} {'='*20}")
-        result = test_func()
-        results.append((test_name, result))
+    missing = []
+    for file_path in config_files:
+        if os.path.exists(file_path):
+            print(f"✅ {file_path} exists")
+        else:
+            print(f"❌ {file_path} missing")
+            missing.append(file_path)
     
-    # Summary
-    print("\n" + "=" * 50)
-    print("📋 Deployment Test Summary:")
-    
-    passed = sum(1 for _, result in results if result)
-    total = len(results)
-    
-    for test_name, result in results:
-        status = "✅ PASS" if result else "❌ FAIL"
-        print(f"   {test_name}: {status}")
-    
-    print(f"\nOverall: {passed}/{total} tests passed")
-    
-    if passed == total:
-        print("🎉 All tests passed! Deployment should work.")
-        print("\n🚀 Next Steps:")
-        print("1. Push to main branch to trigger deployment")
-        print("2. Monitor GitHub Actions workflow")
-        print("3. Check server status after deployment")
+    if missing:
+        print(f"❌ Missing files: {missing}")
+        return False
     else:
-        print("⚠️  Some tests failed. Please fix issues before deployment.")
-        print("\n🔧 Common fixes:")
-        print("1. Ensure ORACLE_SSH_KEY secret is configured in GitHub")
-        print("2. Check server connectivity (139.185.33.139)")
-        print("3. Verify all required files are present")
-        print("4. Test SSH connection manually")
+        print("✅ All config files present")
+        return True
+
+def main():
+    print("🚀 Starting deployment test...")
+    print(f"📁 Current directory: {os.getcwd()}")
+    print(f"🐍 Python executable: {sys.executable}")
     
-    return passed == total
+    # Test dependencies
+    deps_ok = test_dependencies()
+    
+    # Test configuration
+    config_ok = test_config()
+    
+    # Test app startup
+    app_ok = test_app_startup()
+    
+    print("\n📊 Test Results:")
+    print(f"Dependencies: {'✅' if deps_ok else '❌'}")
+    print(f"Configuration: {'✅' if config_ok else '❌'}")
+    print(f"App Startup: {'✅' if app_ok else '❌'}")
+    
+    if all([deps_ok, config_ok, app_ok]):
+        print("🎉 All tests passed!")
+        return 0
+    else:
+        print("❌ Some tests failed!")
+        return 1
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1) 
+    exit(main()) 

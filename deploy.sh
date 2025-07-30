@@ -46,18 +46,20 @@ if [ -f "requirements.txt" ]; then
 fi
 
 # Stop existing app if running
-if pgrep -f "python3 app.py" > /dev/null; then
+if pgrep -f "python3.*app.py" > /dev/null; then
     echo "🛑 Stopping existing app..."
-    pkill -f "python3 app.py" || true
+    pkill -f "python3.*app.py" || true
     sleep 2
 fi
 
-if [ -f "app.py" ]; then
-    echo "🚀 Starting app in background..."
-    nohup python3 app.py > output.log 2>&1 &
-    echo "✅ App is running."
+if [ -f "api/app.py" ]; then
+    echo "🚀 Starting API app in background..."
+    cd api
+    nohup python3 app.py > ../output.log 2>&1 &
+    cd ..
+    echo "✅ API app is running."
 else
-    echo "⚠️ app.py not found."
+    echo "⚠️ api/app.py not found."
 fi
 
 echo "✅ Application deployment finished."
