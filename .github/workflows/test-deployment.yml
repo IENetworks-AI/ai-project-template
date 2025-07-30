@@ -1,0 +1,82 @@
+name: Test Deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-deployment:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ORACLE_SSH_KEY }}" > ~/.ssh/oracle.key
+          chmod 600 ~/.ssh/oracle.key
+          ssh-keyscan -H 139.185.33.139 >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ SSH connection successful'; uname -a"
+
+      - name: Check server status
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "📊 Server Status Report"
+            echo "========================"
+            
+            echo "🖥️ System Info:"
+            uname -a
+            echo ""
+            
+            echo "💾 Disk Usage:"
+            df -h
+            echo ""
+            
+            echo "🧠 Memory Usage:"
+            free -h
+            echo ""
+            
+            echo "📈 Load Average:"
+            uptime
+            echo ""
+            
+            echo "🔧 Service Status:"
+            sudo systemctl status aiapp --no-pager -l || echo "Service not found"
+            echo ""
+            
+            echo "🌐 Network Status:"
+            netstat -tlnp | grep :5000 || echo "No service on port 5000"
+            echo ""
+            
+            echo "📁 Project Directory:"
+            ls -la /home/ubuntu/ai-project-template/ | head -10 || echo "Project directory not found"
+            echo ""
+            
+            echo "✅ Status check completed"
+          EOF
+
+      - name: Test apt functionality
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "🔧 Testing apt functionality..."
+            
+            # Check if apt is locked
+            if sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
+              echo "⚠️ Apt is locked, attempting to fix..."
+              sudo killall apt apt-get || true
+              sudo rm -f /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/dpkg/lock* /var/lib/dpkg/lock-frontend || true
+              sleep 5
+            fi
+            
+            # Test apt update
+            if sudo apt-get update; then
+              echo "✅ Apt is working properly"
+            else
+              echo "❌ Apt is not working"
+              exit 1
+            fi
+          EOF 

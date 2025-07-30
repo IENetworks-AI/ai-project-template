@@ -112,6 +112,11 @@ jobs:
             fi
           EOF
 
+      - name: Install rsync on runner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync
+
       - name: Deploy Code to Oracle
         run: |
           echo "🚀 Starting deployment..."

@@ -110,15 +110,41 @@ All deployment workflows include:
 1. **Apt Lock Errors**:
    - Use `server-maintenance.yml` → `fix-locks`
    - Check for running apt processes
+   - Use `test-deployment.yml` to verify apt functionality
 
 2. **SSH Connection Issues**:
    - Verify SSH key in GitHub secrets
    - Check server accessibility
+   - Use `test-deployment.yml` to test connection
 
 3. **Service Not Starting**:
    - Use `server-maintenance.yml` → `check-status`
    - Check logs with `sudo journalctl -u aiapp`
+   - Use `server-maintenance.yml` → `restart-services`
 
 4. **Artifact Download Issues**:
    - Ensure data pipeline completed successfully
-   - Check artifact retention settings 
+   - Check artifact retention settings
+
+5. **rsync Command Not Found**:
+   - Fixed: All deployment workflows now install rsync on the runner
+   - This was a GitHub Actions runner issue, not a server issue
+
+### Step-by-Step Troubleshooting
+
+1. **First, test basic connectivity**:
+   - Run `test-deployment.yml` workflow
+   - This will check SSH connection and server status
+
+2. **If apt locks are the issue**:
+   - Run `server-maintenance.yml` → `fix-locks`
+   - Then run `test-deployment.yml` again to verify
+
+3. **If services are not running**:
+   - Run `server-maintenance.yml` → `check-status`
+   - Then run `server-maintenance.yml` → `restart-services`
+
+4. **For deployment issues**:
+   - Use `deploy.yml` for simple deployments
+   - Use `deploy-with-artifacts.yml` for deployments with models
+   - Check logs for specific error messages 
