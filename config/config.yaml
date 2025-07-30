@@ -1,0 +1,36 @@
+# Oracle AI Project Configuration
+# Oracle Cloud Infrastructure Settings
+oracle_server:
+  host: "139.185.33.139"
+  user: "ubuntu"
+  target_dir: "/home/ubuntu/ai-project"
+
+# Data Paths
+raw_data_path: "data/raw/"
+processed_data_path: "data/processed/"
+features_path: "data/processed/features.csv"
+models_path: "data/processed/models/"
+
+# Model Configuration
+model:
+  test_size: 0.2
+  random_state: 42
+  cv_folds: 5
+
+# Oracle Database Configuration (if using cx_Oracle)
+database:
+  host: "localhost"  # Update with your Oracle DB host
+  port: 1521
+  service_name: "ORCL"  # Update with your service name
+  username: "your_username"  # Update with your DB username
+  password: "your_password"  # Update with your DB password
+
+# Feature Engineering Settings
+feature_engineering:
+  min_features: 5
+  correlation_threshold: 0.8
+
+# Training Settings
+training:
+  max_iter: 1000
+  tolerance: 1e-4 

@@ -1,0 +1,124 @@
+name: Oracle AI Pipeline CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run tests
+        run: |
+          python -m pytest tests/ -v
+
+  preprocess:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run data preprocessing
+        run: |
+          python pipelines/ai_pipeline.py
+      
+      - name: Archive processed data
+        uses: actions/upload-artifact@v3
+        with:
+          name: processed-data
+          path: data/processed/
+
+  train:
+    needs: preprocess
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download processed data
+        uses: actions/download-artifact@v3
+        with:
+          name: processed-data
+          path: data/processed/
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Train and evaluate models
+        run: |
+          python pipelines/ai_pipeline.py
+      
+      - name: Archive models and results
+        uses: actions/upload-artifact@v3
+        with:
+          name: models-and-results
+          path: |
+            data/processed/models/
+            data/processed/evaluation_results.csv
+            data/processed/evaluation_report.txt
+
+  deploy:
+    needs: train
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download models and results
+        uses: actions/download-artifact@v3
+        with:
+          name: models-and-results
+          path: data/processed/
+      
+      - name: Download processed data
+        uses: actions/download-artifact@v3
+        with:
+          name: processed-data
+          path: data/processed/
+      
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      
+      - name: Deploy to Oracle Cloud
+        run: |
+          rsync -avz --delete ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.SSH_TARGET_DIR }}
+        env:
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+      
+      - name: Restart API service
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "sudo systemctl restart oracle-ai-api"
+        env:
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }} 
