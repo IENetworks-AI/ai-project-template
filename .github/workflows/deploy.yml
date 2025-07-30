@@ -27,12 +27,26 @@ jobs:
 
       - name: Install rsync on runner
         run: |
-          sudo apt-get update
-          sudo apt-get install -y rsync
+          echo "🔧 Installing rsync on GitHub Actions runner..."
+          sudo apt-get update -qq
+          sudo apt-get install -y rsync -qq
+          echo "✅ rsync installed successfully"
+          rsync --version
+
+      - name: Verify rsync is working
+        run: |
+          echo "🔍 Verifying rsync functionality..."
+          which rsync
+          rsync --version | head -1
+          echo "✅ rsync is ready for deployment"
 
       - name: Deploy Code to Oracle
         run: |
           echo "🚀 Starting deployment..."
+          echo "📁 Current directory: $(pwd)"
+          echo "📋 Files to deploy:"
+          ls -la | head -10
+          echo "🔄 Running rsync command..."
           rsync -avz --delete -e "ssh -i ~/.ssh/oracle.key -o StrictHostKeyChecking=no" ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
           echo "✅ Code deployment completed"
 

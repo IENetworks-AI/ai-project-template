@@ -12,6 +12,11 @@ The error you encountered was because `rsync` wasn't installed on the GitHub Act
 - Separate workflow files created
 - Enhanced error handling with retries
 
+⚠️ **Current Issue**: rsync command not found error still occurring
+- Added debug workflow to diagnose the exact issue
+- Enhanced rsync installation with better error handling
+- Added verification steps to ensure rsync is working
+
 ## 📋 Available Workflows
 
 ### 1. **Test Deployment** (`test-deployment.yml`)
@@ -103,4 +108,5 @@ sudo journalctl -u aiapp -f
 | service not starting | Run `server-maintenance.yml` → `restart-services` |
 | SSH connection failed | Check SSH key in GitHub secrets |
 | deployment failed | Check logs and run `test-deployment.yml` |
-| quick test | Run `quick-test.yml` to verify basic functionality | 
+| quick test | Run `quick-test.yml` to verify basic functionality |
+| rsync debugging | Run `debug-rsync.yml` to diagnose rsync issues | 
