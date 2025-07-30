@@ -1,6 +1,7 @@
 import os
 import yaml
 import json
+import pandas as pd
 
 def ensure_dir(path):
     """Create directory if it doesn't exist"""
@@ -44,4 +45,32 @@ def save_json_config(config, config_path):
         return True
     except Exception as e:
         print(f"Error saving JSON config to {config_path}: {e}")
-        return False 
+        return False
+
+def save_data(data, file_path):
+    """Save data to file (CSV, JSON, etc.)"""
+    try:
+        ensure_dir(os.path.dirname(file_path))
+        if file_path.endswith('.csv'):
+            data.to_csv(file_path, index=False)
+        elif file_path.endswith('.json'):
+            data.to_json(file_path, orient='records', indent=2)
+        else:
+            raise ValueError(f"Unsupported file format: {file_path}")
+        return True
+    except Exception as e:
+        print(f"Error saving data to {file_path}: {e}")
+        return False
+
+def load_data(file_path):
+    """Load data from file (CSV, JSON, etc.)"""
+    try:
+        if file_path.endswith('.csv'):
+            return pd.read_csv(file_path)
+        elif file_path.endswith('.json'):
+            return pd.read_json(file_path)
+        else:
+            raise ValueError(f"Unsupported file format: {file_path}")
+    except Exception as e:
+        print(f"Error loading data from {file_path}: {e}")
+        raise FileNotFoundError(f"Could not load data from {file_path}") 
