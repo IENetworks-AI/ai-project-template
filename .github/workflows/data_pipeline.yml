@@ -117,6 +117,10 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ SSH connection successful'; uname -a"
 
+      - name: Ensure rsync is installed
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "sudo apt-get update && sudo apt-get install -y rsync"
+
       - name: Deploy to Oracle Cloud
         run: |
           rsync -avz --delete -e "ssh -i ~/.ssh/oracle.key -o StrictHostKeyChecking=no" ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
