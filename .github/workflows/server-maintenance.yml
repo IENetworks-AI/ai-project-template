@@ -36,6 +36,10 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
             echo "🔧 Fixing apt locks..."
             
+            # Fix dpkg interruption first
+            echo "🔧 Fixing dpkg interruption..."
+            sudo dpkg --configure -a
+            
             # Kill any running apt processes
             sudo killall apt apt-get || true
             sleep 3

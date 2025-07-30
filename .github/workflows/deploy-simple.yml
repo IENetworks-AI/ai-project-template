@@ -27,6 +27,10 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
             echo "🔧 Ensuring server has required tools..."
             
+            # Fix dpkg interruption first
+            echo "🔧 Fixing dpkg interruption..."
+            sudo dpkg --configure -a
+            
             # Handle apt locks if needed
             sudo killall apt apt-get || true
             sudo rm -f /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/dpkg/lock* /var/lib/dpkg/lock-frontend || true
