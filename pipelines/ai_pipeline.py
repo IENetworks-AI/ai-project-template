@@ -28,7 +28,7 @@ def main():
     try:
         # Step 1: Extract data
         logger.info("Step 1: Extracting data")
-        df = extract_data(source_type='csv', file_path='data/raw/Sales Dataset.csv')
+        df = extract_data(source_type='csv', file_path='data/Sales Dataset.csv')
         
         if df is None or df.empty:
             logger.error("No data extracted. Pipeline failed.")

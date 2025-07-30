@@ -48,7 +48,7 @@ jobs:
           python pipelines/ai_pipeline.py
       
       - name: Archive processed data
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: processed-data
           path: data/processed/
@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Download processed data
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: processed-data
           path: data/processed/
@@ -80,7 +80,7 @@ jobs:
           python pipelines/ai_pipeline.py
       
       - name: Archive models and results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: models-and-results
           path: |
@@ -95,13 +95,13 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Download models and results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: models-and-results
           path: data/processed/
       
       - name: Download processed data
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: processed-data
           path: data/processed/
