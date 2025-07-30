@@ -1,0 +1,154 @@
+name: Deploy with Data Pipeline Artifacts
+
+on:
+  workflow_run:
+    workflows: ["Oracle AI Pipeline CI/CD"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      use_artifacts:
+        description: 'Use artifacts from data pipeline'
+        required: false
+        default: 'true'
+        type: boolean
+
+jobs:
+  deploy-with-artifacts:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts from data pipeline
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: models-and-results
+          path: data/processed/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Download processed data
+        if: ${{ github.event.workflow_run.conclusion == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data
+          path: data/processed/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ORACLE_SSH_KEY }}" > ~/.ssh/oracle.key
+          chmod 600 ~/.ssh/oracle.key
+          ssh-keyscan -H 139.185.33.139 >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ SSH connection successful'; uname -a"
+
+      - name: Handle apt locks and install rsync (with retry)
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "🔧 Checking for apt locks..."
+            
+            # Function to handle apt locks
+            handle_apt_locks() {
+              echo "🛑 Killing any running apt processes..."
+              sudo killall apt apt-get || true
+              sleep 3
+              
+              echo "🗑️ Removing lock files..."
+              sudo rm -f /var/lib/apt/lists/lock || true
+              sudo rm -f /var/cache/apt/archives/lock || true
+              sudo rm -f /var/lib/dpkg/lock* || true
+              sudo rm -f /var/lib/dpkg/lock-frontend || true
+              
+              echo "✅ Apt locks cleared"
+            }
+            
+            # Retry mechanism for apt operations
+            max_retries=3
+            retry_count=0
+            
+            while [ $retry_count -lt $max_retries ]; do
+              echo "🔄 Attempt $((retry_count + 1)) of $max_retries"
+              
+              # Handle locks first
+              handle_apt_locks
+              
+              # Wait a bit more to ensure everything is clear
+              sleep 5
+              
+              echo "📦 Updating package lists..."
+              if sudo apt-get update; then
+                echo "✅ Package lists updated successfully"
+                break
+              else
+                echo "❌ Failed to update package lists"
+                retry_count=$((retry_count + 1))
+                if [ $retry_count -lt $max_retries ]; then
+                  echo "⏳ Waiting 10 seconds before retry..."
+                  sleep 10
+                fi
+              fi
+            done
+            
+            if [ $retry_count -eq $max_retries ]; then
+              echo "❌ Failed to update package lists after $max_retries attempts"
+              exit 1
+            fi
+            
+            echo "📦 Installing rsync..."
+            if sudo apt-get install -y rsync; then
+              echo "✅ rsync installation completed"
+            else
+              echo "❌ Failed to install rsync"
+              exit 1
+            fi
+          EOF
+
+      - name: Deploy Code to Oracle
+        run: |
+          echo "🚀 Starting deployment..."
+          rsync -avz --delete -e "ssh -i ~/.ssh/oracle.key -o StrictHostKeyChecking=no" ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
+          echo "✅ Code deployment completed"
+
+      - name: Run deployment script
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "cd /home/ubuntu/ai-project-template && chmod +x deploy.sh && ./deploy.sh"
+
+      - name: Verify deployment
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "🔍 Verifying deployment..."
+            
+            # Check if service is running
+            if sudo systemctl is-active --quiet aiapp; then
+              echo "✅ aiapp service is running"
+              sudo systemctl status aiapp --no-pager -l
+            else
+              echo "❌ aiapp service is not running"
+              sudo systemctl status aiapp --no-pager -l
+              exit 1
+            fi
+            
+            # Check if app is responding
+            if curl -f http://localhost:5000/health 2>/dev/null; then
+              echo "✅ Application is responding"
+            else
+              echo "⚠️ Application health check failed"
+            fi
+            
+            # Check if artifacts were deployed
+            if [ -d "/home/ubuntu/ai-project-template/data/processed/models" ]; then
+              echo "✅ Model artifacts found"
+              ls -la /home/ubuntu/ai-project-template/data/processed/models/
+            else
+              echo "⚠️ Model artifacts not found"
+            fi
+          EOF 

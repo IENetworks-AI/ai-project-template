@@ -5,7 +5,6 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   test:
@@ -88,50 +87,3 @@ jobs:
             data/processed/evaluation_results.csv
             data/processed/evaluation_report.txt
 
-  deploy:
-    needs: train
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download models and results
-        uses: actions/download-artifact@v4
-        with:
-          name: models-and-results
-          path: data/processed/
-
-      - name: Download processed data
-        uses: actions/download-artifact@v4
-        with:
-          name: processed-data
-          path: data/processed/
-
-      - name: Setup SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.ORACLE_SSH_KEY }}" > ~/.ssh/oracle.key
-          chmod 600 ~/.ssh/oracle.key
-          ssh-keyscan -H 139.185.33.139 >> ~/.ssh/known_hosts
-
-      - name: Test SSH Connection
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ SSH connection successful'; uname -a"
-
-      - name: Ensure rsync is installed
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
-            echo "Waiting for apt lock to be released..."
-            while sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
-              sleep 5
-            done
-            sudo apt-get update
-            sudo apt-get install -y rsync
-          EOF
-
-      - name: Deploy to Oracle Cloud
-        run: |
-          rsync -avz --delete -e "ssh -i ~/.ssh/oracle.key -o StrictHostKeyChecking=no" ./ ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
-
-      - name: Restart API service
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "cd /home/ubuntu/ai-project-template && sudo systemctl restart aiapp"

@@ -1,0 +1,128 @@
+name: Server Maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Maintenance action to perform'
+        required: true
+        default: 'fix-locks'
+        type: choice
+        options:
+          - fix-locks
+          - restart-services
+          - check-status
+          - full-maintenance
+
+jobs:
+  maintenance:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ORACLE_SSH_KEY }}" > ~/.ssh/oracle.key
+          chmod 600 ~/.ssh/oracle.key
+          ssh-keyscan -H 139.185.33.139 >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ SSH connection successful'; uname -a"
+
+      - name: Fix apt locks
+        if: ${{ github.event.inputs.action == 'fix-locks' || github.event.inputs.action == 'full-maintenance' }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "🔧 Fixing apt locks..."
+            
+            # Kill any running apt processes
+            sudo killall apt apt-get || true
+            sleep 3
+            
+            # Remove lock files
+            sudo rm -f /var/lib/apt/lists/lock || true
+            sudo rm -f /var/cache/apt/archives/lock || true
+            sudo rm -f /var/lib/dpkg/lock* || true
+            sudo rm -f /var/lib/dpkg/lock-frontend || true
+            
+            echo "✅ Apt locks cleared"
+            
+            # Test apt
+            sudo apt-get update
+            echo "✅ Apt is working properly"
+          EOF
+
+      - name: Restart services
+        if: ${{ github.event.inputs.action == 'restart-services' || github.event.inputs.action == 'full-maintenance' }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "🔄 Restarting services..."
+            
+            # Restart aiapp service
+            sudo systemctl restart aiapp
+            sleep 5
+            
+            # Check status
+            sudo systemctl status aiapp --no-pager -l
+            
+            echo "✅ Services restarted"
+          EOF
+
+      - name: Check server status
+        if: ${{ github.event.inputs.action == 'check-status' || github.event.inputs.action == 'full-maintenance' }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "📊 Server Status Report"
+            echo "========================"
+            
+            echo "🖥️ System Info:"
+            uname -a
+            echo ""
+            
+            echo "💾 Disk Usage:"
+            df -h
+            echo ""
+            
+            echo "🧠 Memory Usage:"
+            free -h
+            echo ""
+            
+            echo "📈 Load Average:"
+            uptime
+            echo ""
+            
+            echo "🔧 Service Status:"
+            sudo systemctl status aiapp --no-pager -l
+            echo ""
+            
+            echo "🌐 Network Status:"
+            netstat -tlnp | grep :5000 || echo "No service on port 5000"
+            echo ""
+            
+            echo "📁 Project Directory:"
+            ls -la /home/ubuntu/ai-project-template/ | head -10
+            echo ""
+            
+            echo "✅ Status check completed"
+          EOF
+
+      - name: Full maintenance
+        if: ${{ github.event.inputs.action == 'full-maintenance' }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "🔧 Running full maintenance..."
+            
+            # Update system
+            sudo apt-get update
+            sudo apt-get upgrade -y
+            
+            # Clean up
+            sudo apt-get autoremove -y
+            sudo apt-get autoclean
+            
+            # Restart services
+            sudo systemctl restart aiapp
+            
+            echo "✅ Full maintenance completed"
+          EOF 
