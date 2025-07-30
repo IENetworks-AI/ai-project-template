@@ -90,4 +90,20 @@ sudo systemctl restart aiapp
 cd ~/ai-project-template
 source venv/bin/activate
 python3 app.py
+```
+
+## Testing
+
+### Run Tests
+```bash
+chmod +x run_tests.sh
+./run_tests.sh
+```
+
+### Or Run Tests Manually
+```bash
+cd ~/ai-project-template
+source venv/bin/activate
+pip install pytest pandas pyyaml
+python -m pytest tests/ -v
 ``` 

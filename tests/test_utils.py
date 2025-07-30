@@ -20,8 +20,8 @@ def test_save_and_load_data():
         'B': ['a', 'b', 'c']
     })
     
-    # Test save
-    test_file = 'test_data.csv'
+    # Test save - use a path in the current directory
+    test_file = './test_data.csv'
     try:
         save_data(test_data, test_file)
         assert os.path.exists(test_file), "File was not saved"

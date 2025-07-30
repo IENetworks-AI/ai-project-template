@@ -50,7 +50,11 @@ def save_json_config(config, config_path):
 def save_data(data, file_path):
     """Save data to file (CSV, JSON, etc.)"""
     try:
-        ensure_dir(os.path.dirname(file_path))
+        # Handle case where file_path is just a filename (no directory)
+        dir_path = os.path.dirname(file_path)
+        if dir_path:  # Only create directory if there is a directory path
+            ensure_dir(dir_path)
+        
         if file_path.endswith('.csv'):
             data.to_csv(file_path, index=False)
         elif file_path.endswith('.json'):
