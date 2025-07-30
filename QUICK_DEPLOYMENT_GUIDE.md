@@ -3,7 +3,7 @@
 ## 🚀 Immediate Actions
 
 ### For the Current rsync Error
-The error you encountered was because `rsync` wasn't installed on the GitHub Actions runner. This has been fixed in all deployment workflows.
+The error you encountered was because `rsync` wasn't installed on the GitHub Actions runner. This has been fixed in all deployment workflows. The workflow now properly installs rsync on the runner before using it.
 
 ### Current Workflow Status
 ✅ **Fixed Issues**:
@@ -98,8 +98,9 @@ sudo journalctl -u aiapp -f
 
 | Issue | Solution |
 |-------|----------|
-| rsync not found | ✅ Fixed - workflows now install rsync |
+| rsync not found | ✅ Fixed - workflows now install rsync on runner |
 | apt locks | Run `server-maintenance.yml` → `fix-locks` |
 | service not starting | Run `server-maintenance.yml` → `restart-services` |
 | SSH connection failed | Check SSH key in GitHub secrets |
-| deployment failed | Check logs and run `test-deployment.yml` | 
+| deployment failed | Check logs and run `test-deployment.yml` |
+| quick test | Run `quick-test.yml` to verify basic functionality | 

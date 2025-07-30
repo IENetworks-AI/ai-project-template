@@ -25,41 +25,6 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ SSH connection successful'; uname -a"
 
-      - name: Handle apt locks and install rsync
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
-            echo "🔧 Checking for apt locks..."
-            
-            # Function to handle apt locks
-            handle_apt_locks() {
-              echo "🛑 Killing any running apt processes..."
-              sudo killall apt apt-get || true
-              sleep 3
-              
-              echo "🗑️ Removing lock files..."
-              sudo rm -f /var/lib/apt/lists/lock || true
-              sudo rm -f /var/cache/apt/archives/lock || true
-              sudo rm -f /var/lib/dpkg/lock* || true
-              sudo rm -f /var/lib/dpkg/lock-frontend || true
-              
-              echo "✅ Apt locks cleared"
-            }
-            
-            # Handle locks first
-            handle_apt_locks
-            
-            # Wait a bit more to ensure everything is clear
-            sleep 5
-            
-            echo "📦 Updating package lists..."
-            sudo apt-get update
-            
-            echo "📦 Installing rsync..."
-            sudo apt-get install -y rsync
-            
-            echo "✅ rsync installation completed"
-          EOF
-
       - name: Install rsync on runner
         run: |
           sudo apt-get update

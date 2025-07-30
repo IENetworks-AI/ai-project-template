@@ -29,8 +29,7 @@ if ! command -v python3 &> /dev/null; then
     install_system_deps
 fi
 
-echo "📥 Pulling latest code..."
-git pull origin main
+echo "📥 Code deployed via rsync from GitHub Actions..."
 
 if [ ! -d "venv" ]; then
     echo "📦 Creating virtual environment..."
