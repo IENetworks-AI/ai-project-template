@@ -1,0 +1,30 @@
+# ML Pipeline Configuration
+
+# Oracle Cloud Infrastructure Settings
+oracle_server:
+  host: "139.185.33.139"
+  user: "ubuntu"
+  target_dir: "/home/ubuntu/ai-project-template"
+
+# Data Paths
+raw_data_path: "data/"
+processed_data_path: "data/processed/"
+features_path: "data/processed/features.csv"
+models_path: "models/"
+
+# Model Configuration
+model:
+  test_size: 0.2
+  random_state: 42
+  cv_folds: 5
+  target_column: "Total Amount"
+
+# Feature Engineering Settings
+feature_engineering:
+  min_features: 5
+  correlation_threshold: 0.8
+
+# Training Settings
+training:
+  max_iter: 1000
+  tolerance: 1e-4 
