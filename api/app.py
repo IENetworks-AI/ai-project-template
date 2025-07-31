@@ -12,9 +12,11 @@ import numpy as np
 from flask import Flask, request, jsonify, render_template_string
 from datetime import datetime
 import logging
+from pathlib import Path
 
 # Add project root to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,28 +34,58 @@ def load_model():
     global model, scaler, feature_names
     
     try:
+        # Define paths using project root
+        models_dir = project_root / 'models'
+        data_dir = project_root / 'data' / 'processed'
+        
+        logger.info(f"Project root: {project_root}")
+        logger.info(f"Models directory: {models_dir}")
+        logger.info(f"Data directory: {data_dir}")
+        
         # Load model
-        model_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'sales_prediction_model.joblib')
-        if os.path.exists(model_path):
-            model = joblib.load(model_path)
+        model_path = models_dir / 'sales_prediction_model.joblib'
+        if model_path.exists():
+            model = joblib.load(str(model_path))
             logger.info(f"Model loaded successfully from {model_path}")
         else:
             logger.error(f"Model file not found at {model_path}")
-            return False
+            # Check if model files exist in root directory (legacy)
+            root_model_path = project_root / 'sales_prediction_model.joblib'
+            if root_model_path.exists():
+                logger.info(f"Found model in root directory, moving to models/")
+                model = joblib.load(str(root_model_path))
+                # Move file to correct location
+                import shutil
+                shutil.move(str(root_model_path), str(model_path))
+                logger.info(f"Model moved to {model_path}")
+            else:
+                logger.error(f"Model file not found in root directory either")
+                return False
         
         # Load scaler
-        scaler_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'feature_scaler.joblib')
-        if os.path.exists(scaler_path):
-            scaler = joblib.load(scaler_path)
+        scaler_path = models_dir / 'feature_scaler.joblib'
+        if scaler_path.exists():
+            scaler = joblib.load(str(scaler_path))
             logger.info(f"Scaler loaded successfully from {scaler_path}")
         else:
             logger.error(f"Scaler file not found at {scaler_path}")
-            return False
+            # Check if scaler files exist in root directory (legacy)
+            root_scaler_path = project_root / 'feature_scaler.joblib'
+            if root_scaler_path.exists():
+                logger.info(f"Found scaler in root directory, moving to models/")
+                scaler = joblib.load(str(root_scaler_path))
+                # Move file to correct location
+                import shutil
+                shutil.move(str(root_scaler_path), str(scaler_path))
+                logger.info(f"Scaler moved to {scaler_path}")
+            else:
+                logger.error(f"Scaler file not found in root directory either")
+                return False
         
         # Load feature names from processed data
-        features_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'processed', 'features.csv')
-        if os.path.exists(features_path):
-            features_df = pd.read_csv(features_path)
+        features_path = data_dir / 'features.csv'
+        if features_path.exists():
+            features_df = pd.read_csv(str(features_path))
             feature_names = features_df.columns.tolist()
             logger.info(f"Feature names loaded: {len(feature_names)} features")
         else:
