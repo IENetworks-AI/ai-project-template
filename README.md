@@ -1,6 +1,6 @@
 # ML Pipeline - Sales Prediction Model
 
-A streamlined ML pipeline for training and deploying a sales prediction model using a sample dataset, with Oracle Cloud Infrastructure deployment.
+A streamlined ML pipeline for training and deploying a sales prediction model using a sample dataset, with Oracle Cloud Infrastructure deployment and modern CI/CD workflow.
 
 ## 🏗️ Architecture
 
@@ -26,10 +26,27 @@ ai-project-template/
 
 - **Sample Dataset**: Uses Sales Dataset for training
 - **Automated Pipeline**: Extract, transform, train, evaluate, and deploy
-- **MLOps Ready**: GitHub Actions CI/CD pipeline
+- **Modern CI/CD**: GitHub Actions with branch-based workflows
+- **Team Collaboration**: Test-Branch for safe testing, Main for production
 - **Oracle Cloud Integration**: Automated deployment to Oracle Cloud Infrastructure
 - **Configurable**: YAML-based configuration management
 - **Clean Architecture**: Modular ETL pipeline
+
+## 🌿 Branching Strategy
+
+### Modern Workflow
+```
+Feature Branches → Test-Branch → Main → Production
+```
+
+- **Feature Branches**: Individual development work
+- **Test-Branch**: Team collaboration and testing (NO deployment)
+- **Main**: Production-ready code with automatic deployment
+
+### Workflow Rules
+1. **Developers**: Create PRs to `Test-Branch` for review
+2. **Admins**: Review and merge to `main` when approved
+3. **Deployment**: Only runs on `main` branch
 
 ## 🛠️ Quick Start
 
@@ -66,12 +83,18 @@ Edit `config/config.yaml` to configure:
 
 ## 🚀 CI/CD Pipeline
 
-The GitHub Actions pipeline automatically:
+### Test-Branch Workflow
+1. **Test**: Run unit tests
+2. **Preprocess**: Extract and transform data
+3. **Train**: Train and evaluate models
+4. **Summary**: Display results (NO deployment)
 
+### Main Branch Workflow
 1. **Test**: Run unit tests
 2. **Preprocess**: Extract and transform data
 3. **Train**: Train and evaluate models
 4. **Deploy**: Deploy to Oracle Cloud Infrastructure
+5. **Summary**: Display results and deployment status
 
 ## 🚀 Oracle Cloud Deployment
 
@@ -116,8 +139,10 @@ python -m pytest tests/test_preprocess.py -v
 - `pipelines/ai_pipeline.py` - Main orchestration
 - `config/config.yaml` - Configuration
 - `data/Sales Dataset.csv` - Sample dataset
-- `.github/workflows/ml_pipeline.yml` - CI/CD workflow
+- `.github/workflows/ml_pipeline.yml` - Main CI/CD workflow
+- `.github/workflows/branch-protection.yml` - Branch protection workflow
 - `deploy.sh` - Oracle server deployment script
+- `WORKFLOW_GUIDE.md` - Modern CI/CD workflow guide
 
 ## 📝 Logs
 
@@ -125,11 +150,22 @@ Logs are automatically generated in the `logs/` directory with timestamps and st
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make changes
-4. Add tests
-5. Submit a pull request
+### For Developers
+1. Create feature branch: `git checkout -b feature/description`
+2. Make changes and commit
+3. Create PR to `Test-Branch` for review
+4. Wait for admin approval
+
+### For Admins
+1. Review PRs in `Test-Branch`
+2. Merge to `main` when approved
+3. Monitor deployment to Oracle Cloud
+
+## 📚 Documentation
+
+- `WORKFLOW_GUIDE.md` - Complete workflow guide
+- `ORACLE_DEPLOYMENT_SETUP.md` - Oracle deployment setup
+- `README.md` - This file
 
 ## 📄 License
 
@@ -137,4 +173,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Status**: ✅ Streamlined ML pipeline for sales prediction with Oracle Cloud deployment
+**Status**: ✅ Streamlined ML pipeline with modern CI/CD workflow and Oracle Cloud deployment

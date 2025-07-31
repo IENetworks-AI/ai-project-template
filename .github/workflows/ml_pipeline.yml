@@ -2,9 +2,9 @@ name: ML Pipeline CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, Test-Branch ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, Test-Branch ]
 
 jobs:
   test:
@@ -49,7 +49,7 @@ jobs:
       - name: Archive processed data
         uses: actions/upload-artifact@v4
         with:
-          name: processed-data
+          name: processed-data-${{ github.sha }}
           path: data/processed/
 
   train:
@@ -61,7 +61,7 @@ jobs:
       - name: Download processed data
         uses: actions/download-artifact@v4
         with:
-          name: processed-data
+          name: processed-data-${{ github.sha }}
           path: data/processed/
 
       - name: Set up Python
@@ -81,23 +81,37 @@ jobs:
       - name: Archive models and results
         uses: actions/upload-artifact@v4
         with:
-          name: models-and-results
+          name: models-and-results-${{ github.sha }}
           path: |
             models/
             data/processed/evaluation_results.csv
             data/processed/evaluation_report.txt
 
+      - name: Display Model Performance
+        run: |
+          echo "🎯 Model Training Results:"
+          echo "=========================="
+          if [ -f "data/processed/evaluation_results.csv" ]; then
+            cat data/processed/evaluation_results.csv
+          fi
+          if [ -f "data/processed/evaluation_report.txt" ]; then
+            echo ""
+            echo "📊 Detailed Evaluation Report:"
+            cat data/processed/evaluation_report.txt
+          fi
+
+  # Deployment job - ONLY runs on main branch
   deploy:
     needs: train
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
       - name: Download models and results
         uses: actions/download-artifact@v4
         with:
-          name: models-and-results
+          name: models-and-results-${{ github.sha }}
           path: models/
 
       - name: Set up Python
@@ -183,7 +197,7 @@ jobs:
       - name: Deploy Code to Oracle
         if: steps.check-deployment.outputs.oracle_deploy == 'true'
         run: |
-          echo "🚀 Starting deployment..."
+          echo "🚀 Starting deployment to Oracle Cloud..."
           echo "📁 Current directory: $(pwd)"
           echo "📋 Files to deploy:"
           ls -la | head -10
@@ -316,4 +330,41 @@ jobs:
           echo ""
           echo "Pipeline completed successfully! Models are available as artifacts."
           echo "You can download them from the Actions tab."
+
+  # Summary job - runs on all branches
+  summary:
+    needs: [test, preprocess, train]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pipeline Summary
+        run: |
+          echo "🎯 ML Pipeline Summary"
+          echo "======================"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo ""
+          
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "✅ This is the main branch - deployment will run if secrets are configured"
+          elif [ "${{ github.ref_name }}" = "Test-Branch" ]; then
+            echo "🧪 This is the Test-Branch - deployment will NOT run (testing only)"
+          else
+            echo "🔧 This is a feature branch - testing pipeline components"
+          fi
+          
+          echo ""
+          echo "📋 Pipeline Steps Completed:"
+          echo "  ✅ Tests"
+          echo "  ✅ Data Preprocessing"
+          echo "  ✅ Model Training"
+          
+          if [ "${{ github.ref_name }}" = "main" ] && [ "${{ github.event_name }}" = "push" ]; then
+            echo "  🚀 Deployment (if secrets configured)"
+          else
+            echo "  ⏭️  Deployment (skipped - not main branch or not push event)"
+          fi
+          
+          echo ""
+          echo "🎉 Pipeline completed successfully!"
 
