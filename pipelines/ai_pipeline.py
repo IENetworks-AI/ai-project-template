@@ -4,31 +4,56 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import yaml
 import pandas as pd
+from pathlib import Path
 from etl.extract.extract_data import extract_data
 from etl.transform.transform_data import transform_data
 from etl.load.load_data import save_to_csv, save_model, save_scaler
 from src.data.train_model import train_model
 from src.data.evaluate_model import evaluate_model
 from src.utils.logging import get_logger
+import joblib
 
 logger = get_logger('ai_pipeline')
 
 def load_config():
     """Load configuration from config.yaml"""
-    with open('config/config.yaml', 'r') as f:
+    config_path = Path(__file__).parent.parent / 'config' / 'config.yaml'
+    with open(config_path, 'r') as f:
         return yaml.safe_load(f)
+
+def ensure_directory_structure():
+    """Ensure all required directories exist"""
+    base_dir = Path(__file__).parent.parent
+    
+    directories = [
+        base_dir / 'models',
+        base_dir / 'data' / 'processed',
+        base_dir / 'logs'
+    ]
+    
+    for directory in directories:
+        directory.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Ensured directory exists: {directory}")
 
 def main():
     """Main AI pipeline orchestration"""
     logger.info("Starting ML Pipeline with Sample Sales Dataset")
     
+    # Get base directory
+    base_dir = Path(__file__).parent.parent
+    logger.info(f"Base directory: {base_dir}")
+    
     # Load configuration
     config = load_config()
+    
+    # Ensure directory structure
+    ensure_directory_structure()
     
     try:
         # Step 1: Extract data from sample dataset
         logger.info("Step 1: Extracting data from Sales Dataset")
-        df = extract_data(source_type='csv', file_path='data/Sales Dataset.csv')
+        data_path = base_dir / 'data' / 'Sales Dataset.csv'
+        df = extract_data(source_type='csv', file_path=str(data_path))
         
         if df is None or df.empty:
             logger.error("No data extracted. Pipeline failed.")
@@ -71,29 +96,42 @@ def main():
         # Step 5: Save results
         logger.info("Step 5: Saving results")
         
-        # Create models directory if it doesn't exist
-        os.makedirs('models', exist_ok=True)
-        
         # Save processed features
         features_df = transformed_data['X_train'].copy()
-        save_to_csv(features_df, config['features_path'])
+        features_path = base_dir / config['features_path']
+        save_to_csv(features_df, str(features_path))
         
         # Save target separately
         target_df = pd.DataFrame({'target': transformed_data['y_train']})
-        save_to_csv(target_df, 'data/processed/target.csv')
+        target_path = base_dir / 'data' / 'processed' / 'target.csv'
+        save_to_csv(target_df, str(target_path))
         
-        # Save model
-        save_model(model_results['model'], 'sales_prediction_model', config)
+        # Save model with absolute path
+        model_path = base_dir / 'models' / 'sales_prediction_model.joblib'
+        try:
+            joblib.dump(model_results['model'], str(model_path))
+            logger.info(f"Model saved: {model_path}")
+        except Exception as e:
+            logger.error(f"Error saving model: {e}")
+            return False
         
-        # Save scaler
-        save_scaler(transformed_data['scaler'], 'feature_scaler', config)
+        # Save scaler with absolute path
+        scaler_path = base_dir / 'models' / 'feature_scaler.joblib'
+        try:
+            joblib.dump(transformed_data['scaler'], str(scaler_path))
+            logger.info(f"Scaler saved: {scaler_path}")
+        except Exception as e:
+            logger.error(f"Error saving scaler: {e}")
+            return False
         
         # Save evaluation results
         evaluation_df = pd.DataFrame([evaluation_results])
-        save_to_csv(evaluation_df, 'data/processed/evaluation_results.csv')
+        eval_path = base_dir / 'data' / 'processed' / 'evaluation_results.csv'
+        save_to_csv(evaluation_df, str(eval_path))
         
         # Create evaluation report
-        with open('data/processed/evaluation_report.txt', 'w') as f:
+        report_path = base_dir / 'data' / 'processed' / 'evaluation_report.txt'
+        with open(report_path, 'w') as f:
             f.write("Sales Prediction Model Evaluation Report\n")
             f.write("=" * 50 + "\n\n")
             f.write(f"Model Type: {model_results['model_type']}\n")
@@ -109,6 +147,22 @@ def main():
             f.write(f"\nTraining Records: {len(transformed_data['y_train'])}\n")
             f.write(f"Test Records: {len(transformed_data['y_test'])}\n")
             f.write(f"Features: {len(transformed_data['feature_names'])}\n")
+        
+        # Verify files were saved correctly
+        logger.info("Verifying saved files:")
+        model_files = [
+            base_dir / 'models' / 'sales_prediction_model.joblib',
+            base_dir / 'models' / 'feature_scaler.joblib',
+            base_dir / 'data' / 'processed' / 'features.csv'
+        ]
+        
+        for file_path in model_files:
+            if file_path.exists():
+                size = file_path.stat().st_size
+                logger.info(f"✅ {file_path.name} exists ({size} bytes)")
+            else:
+                logger.error(f"❌ {file_path.name} not found")
+                return False
         
         logger.info("ML Pipeline completed successfully!")
         logger.info(f"Model Performance: {evaluation_results}")

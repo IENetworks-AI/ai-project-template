@@ -1,0 +1,15 @@
+Sales Prediction Model Evaluation Report
+==================================================
+
+Model Type: random_forest
+Task: regression
+
+Performance Metrics:
+  mse: 0.0000
+  r2: 1.0000
+  rmse: 0.0000
+  mae: 0.0000
+
+Training Records: 800
+Test Records: 200
+Features: 65

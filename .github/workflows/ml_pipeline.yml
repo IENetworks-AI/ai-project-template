@@ -392,21 +392,24 @@ jobs:
                 pip install -r requirements.txt
             fi
             
-            # Set up systemd service for the ML pipeline
-            echo "🔧 Setting up ML pipeline systemd service..."
-            sudo tee /etc/systemd/system/mlpipeline.service > /dev/null << 'SERVICE_EOF'
+            # Set up systemd service for the API server
+            echo "🔧 Setting up API server systemd service..."
+            sudo tee /etc/systemd/system/mlapi.service > /dev/null << 'SERVICE_EOF'
             [Unit]
-            Description=ML Pipeline Service
+            Description=ML Pipeline API Server
             After=network.target
             
             [Service]
             Type=simple
             User=ubuntu
             WorkingDirectory=/home/ubuntu/ai-project-template
-            ExecStart=/home/ubuntu/ai-project-template/venv/bin/python pipelines/ai_pipeline.py
-            Restart=on-failure
-            RestartSec=5
+            ExecStart=/home/ubuntu/ai-project-template/venv/bin/python api/app.py
+            Restart=always
+            RestartSec=10
             Environment=PATH=/home/ubuntu/ai-project-template/venv/bin
+            Environment=PORT=5000
+            StandardOutput=journal
+            StandardError=journal
             
             [Install]
             WantedBy=multi-user.target
@@ -414,9 +417,10 @@ jobs:
             
             # Reload systemd and enable service
             sudo systemctl daemon-reload
-            sudo systemctl enable mlpipeline.service
+            sudo systemctl enable mlapi.service
+            sudo systemctl start mlapi.service
             
-            echo "✅ ML Pipeline service configured and enabled!"
+            echo "✅ API server service configured, enabled, and started!"
             echo "✅ Deployment completed successfully!"
           EOF
 
@@ -426,11 +430,11 @@ jobs:
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
             echo "🔍 Verifying deployment..."
             
-            # Check if ML pipeline files are deployed
-            if [ -f "/home/ubuntu/ai-project-template/pipelines/ai_pipeline.py" ]; then
-              echo "✅ ML pipeline files deployed successfully"
+            # Check if API server files are deployed
+            if [ -f "/home/ubuntu/ai-project-template/api/app.py" ]; then
+              echo "✅ API server files deployed successfully"
             else
-              echo "❌ ML pipeline files not found"
+              echo "❌ API server files not found"
               exit 1
             fi
             
@@ -442,11 +446,39 @@ jobs:
               echo "⚠️ Models directory not found"
             fi
             
-            # Check if service is configured
-            if sudo systemctl is-enabled mlpipeline.service; then
-              echo "✅ ML pipeline service is enabled"
+            # Check if service is configured and running
+            if sudo systemctl is-enabled mlapi.service; then
+              echo "✅ API server service is enabled"
             else
-              echo "❌ ML pipeline service is not enabled"
+              echo "❌ API server service is not enabled"
+              echo "🔧 Attempting to enable service..."
+              sudo systemctl enable mlapi.service
+            fi
+            
+            if sudo systemctl is-active mlapi.service; then
+              echo "✅ API server service is running"
+            else
+              echo "❌ API server service is not running"
+              echo "🔧 Attempting to start service..."
+              sudo systemctl start mlapi.service
+              sleep 5
+              if sudo systemctl is-active mlapi.service; then
+                echo "✅ API server service started successfully"
+              else
+                echo "❌ Failed to start API server service"
+                echo "📋 Service logs:"
+                sudo journalctl -u mlapi.service -n 20 --no-pager
+              fi
+            fi
+            
+            # Test API health
+            echo "🧪 Testing API health..."
+            if curl -f http://localhost:5000/health 2>/dev/null; then
+              echo "✅ API health check passed"
+            else
+              echo "⚠️ API health check failed - service might still be starting"
+              echo "📋 Service status:"
+              sudo systemctl status mlapi.service --no-pager -l
             fi
             
             echo "🎉 Deployment verification completed successfully!"
