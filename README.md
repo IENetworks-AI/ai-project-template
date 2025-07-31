@@ -81,18 +81,19 @@ The GitHub Actions pipeline automatically:
    - Username: `ubuntu`
    - OS: Ubuntu Server
 
-2. **GitHub Secrets** (Required):
-   - `SSH_PRIVATE_KEY`: Your SSH private key
-   - `SSH_USER`: `ubuntu`
-   - `SSH_HOST`: `139.185.33.139`
-   - `SSH_TARGET_DIR`: `/home/ubuntu/ai-project-template`
+2. **GitHub Secret** (Required):
+   - `ORACLE_SSH_KEY`: Your SSH private key content
 
 ### Deployment Process
 The pipeline automatically:
 1. **Tests**: Run unit tests
 2. **Preprocesses**: Extract and transform data
 3. **Trains**: Train and evaluate models
-4. **Deploys**: Deploy to Oracle Cloud server with systemd service
+4. **Deploys**: Deploy to Oracle Cloud server using rsync
+5. **Configures**: Sets up systemd service for ML pipeline
+
+### Setup Instructions
+See `ORACLE_DEPLOYMENT_SETUP.md` for detailed setup instructions.
 
 ## 📊 Sample Dataset
 
@@ -116,6 +117,7 @@ python -m pytest tests/test_preprocess.py -v
 - `config/config.yaml` - Configuration
 - `data/Sales Dataset.csv` - Sample dataset
 - `.github/workflows/ml_pipeline.yml` - CI/CD workflow
+- `deploy.sh` - Oracle server deployment script
 
 ## 📝 Logs
 
