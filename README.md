@@ -1,6 +1,6 @@
 # ML Pipeline - Sales Prediction Model
 
-A streamlined ML pipeline for training and deploying a sales prediction model using a sample dataset.
+A streamlined ML pipeline for training and deploying a sales prediction model using a sample dataset, with Oracle Cloud Infrastructure deployment.
 
 ## 🏗️ Architecture
 
@@ -27,6 +27,7 @@ ai-project-template/
 - **Sample Dataset**: Uses Sales Dataset for training
 - **Automated Pipeline**: Extract, transform, train, evaluate, and deploy
 - **MLOps Ready**: GitHub Actions CI/CD pipeline
+- **Oracle Cloud Integration**: Automated deployment to Oracle Cloud Infrastructure
 - **Configurable**: YAML-based configuration management
 - **Clean Architecture**: Modular ETL pipeline
 
@@ -58,6 +59,7 @@ cat data/processed/evaluation_report.txt
 
 Edit `config/config.yaml` to configure:
 
+- **Oracle Server**: Connection settings for deployment
 - **Model Parameters**: Training configuration
 - **Data Paths**: Input/output directories
 - **Target Column**: "Total Amount" for sales prediction
@@ -69,7 +71,28 @@ The GitHub Actions pipeline automatically:
 1. **Test**: Run unit tests
 2. **Preprocess**: Extract and transform data
 3. **Train**: Train and evaluate models
-4. **Deploy**: Prepare model for deployment
+4. **Deploy**: Deploy to Oracle Cloud Infrastructure
+
+## 🚀 Oracle Cloud Deployment
+
+### Server Setup
+1. **Server Details**:
+   - IP: `139.185.33.139`
+   - Username: `ubuntu`
+   - OS: Ubuntu Server
+
+2. **GitHub Secrets** (Required):
+   - `SSH_PRIVATE_KEY`: Your SSH private key
+   - `SSH_USER`: `ubuntu`
+   - `SSH_HOST`: `139.185.33.139`
+   - `SSH_TARGET_DIR`: `/home/ubuntu/ai-project-template`
+
+### Deployment Process
+The pipeline automatically:
+1. **Tests**: Run unit tests
+2. **Preprocesses**: Extract and transform data
+3. **Trains**: Train and evaluate models
+4. **Deploys**: Deploy to Oracle Cloud server with systemd service
 
 ## 📊 Sample Dataset
 
@@ -112,4 +135,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Status**: ✅ Streamlined ML pipeline for sales prediction
+**Status**: ✅ Streamlined ML pipeline for sales prediction with Oracle Cloud deployment

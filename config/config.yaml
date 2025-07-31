@@ -1,5 +1,11 @@
 # ML Pipeline Configuration
 
+# Oracle Cloud Infrastructure Settings
+oracle_server:
+  host: "139.185.33.139"
+  user: "ubuntu"
+  target_dir: "/home/ubuntu/ai-project-template"
+
 # Data Paths
 raw_data_path: "data/"
 processed_data_path: "data/processed/"

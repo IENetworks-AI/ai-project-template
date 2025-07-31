@@ -110,9 +110,83 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Deploy model
-        run: |
-          echo "Model deployment completed successfully!"
-          echo "Model files are ready for production use."
-          ls -la models/
+      - name: Deploy to Oracle Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Create deployment directory
+            mkdir -p ${{ secrets.SSH_TARGET_DIR }}
+            cd ${{ secrets.SSH_TARGET_DIR }}
+            
+            # Stop any existing services
+            sudo systemctl stop aiapp.service 2>/dev/null || true
+            
+            # Clean up old files
+            rm -rf *
+            
+            # Create models directory
+            mkdir -p models
+            
+            echo "Oracle server deployment completed successfully!"
+            echo "Model files are ready for production use."
+            
+      - name: Upload files to Oracle Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "models/*"
+          target: "${{ secrets.SSH_TARGET_DIR }}/models/"
+          strip_components: 1
+          
+      - name: Upload pipeline files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "pipelines/*,config/*,requirements.txt,README.md"
+          target: "${{ secrets.SSH_TARGET_DIR }}/"
+          
+      - name: Setup Oracle Server Environment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.SSH_TARGET_DIR }}
+            
+            # Install Python dependencies
+            python3 -m pip install --upgrade pip
+            python3 -m pip install -r requirements.txt
+            
+            # Set up systemd service for the ML pipeline
+            sudo tee /etc/systemd/system/mlpipeline.service > /dev/null <<EOF
+            [Unit]
+            Description=ML Pipeline Service
+            After=network.target
+            
+            [Service]
+            Type=simple
+            User=ubuntu
+            WorkingDirectory=${{ secrets.SSH_TARGET_DIR }}
+            ExecStart=/usr/bin/python3 pipelines/ai_pipeline.py
+            Restart=on-failure
+            RestartSec=5
+            
+            [Install]
+            WantedBy=multi-user.target
+            EOF
+            
+            # Reload systemd and enable service
+            sudo systemctl daemon-reload
+            sudo systemctl enable mlpipeline.service
+            
+            echo "ML Pipeline service configured and enabled!"
+            echo "Deployment completed successfully!"
 

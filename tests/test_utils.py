@@ -42,13 +42,17 @@ def test_file_io_with_nonexistent_file():
         load_data('nonexistent_file.csv')
 
 def test_project_structure():
-    """Test that project has required structure"""
+    """Test that project has required ML pipeline structure"""
     required_files = [
-        'app.py',
         'requirements.txt',
         'config/config.yaml',
+        'pipelines/ai_pipeline.py',
+        'data/Sales Dataset.csv',
         'src/__init__.py',
-        'src/utils/__init__.py'
+        'src/utils/__init__.py',
+        'etl/extract/extract_data.py',
+        'etl/transform/transform_data.py',
+        'etl/load/load_data.py'
     ]
     
     for file_path in required_files:
