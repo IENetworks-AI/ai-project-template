@@ -1,6 +1,6 @@
-# Oracle AI Project - MLOps Pipeline
+# ML Pipeline - Sales Prediction Model
 
-A production-grade, modular MLOps pipeline for AI/ML projects deployed on Oracle Cloud Infrastructure.
+A streamlined ML pipeline for training and deploying a sales prediction model using a sample dataset.
 
 ## 🏗️ Architecture
 
@@ -8,31 +8,27 @@ A production-grade, modular MLOps pipeline for AI/ML projects deployed on Oracle
 ai-project-template/
 ├── config/           # Configuration files (YAML)
 ├── data/
-│   ├── raw/          # Raw data files
-│   └── processed/    # Processed data and models
+│   └── processed/    # Processed data and results
 ├── etl/
-│   ├── extract/      # Data extraction (CSV, Oracle DB)
+│   ├── extract/      # Data extraction (CSV)
 │   ├── transform/    # Data preprocessing & feature engineering
 │   └── load/         # Data & model persistence
 ├── pipelines/        # Pipeline orchestration
 ├── src/
 │   ├── data/         # Training & evaluation logic
-│   ├── validation/   # Data validation
 │   └── utils/        # Utilities & logging
-├── api/              # Flask API for model serving
+├── models/           # Trained models
 ├── tests/            # Unit tests
-├── docs/             # Documentation
 └── .github/workflows/ # CI/CD pipelines
 ```
 
 ## 🚀 Features
 
-- **Modular ETL Pipeline**: Extract from CSV/Oracle DB, transform, and load
-- **Oracle Cloud Integration**: Native support for Oracle Database
-- **MLOps Ready**: Automated training, evaluation, and deployment
-- **RESTful API**: Model serving with prediction endpoints
-- **CI/CD Pipeline**: GitHub Actions for automated deployment
+- **Sample Dataset**: Uses Sales Dataset for training
+- **Automated Pipeline**: Extract, transform, train, evaluate, and deploy
+- **MLOps Ready**: GitHub Actions CI/CD pipeline
 - **Configurable**: YAML-based configuration management
+- **Clean Architecture**: Modular ETL pipeline
 
 ## 🛠️ Quick Start
 
@@ -40,74 +36,46 @@ ai-project-template/
 ```bash
 # Install dependencies
 pip install -r requirements.txt
-
-# Configure Oracle database (optional)
-# Edit config/config.yaml with your Oracle DB credentials
 ```
 
 ### 2. Run Pipeline
 ```bash
-# Run complete AI pipeline
+# Run complete ML pipeline
 python pipelines/ai_pipeline.py
 ```
 
-### 3. Start API
+### 3. Check Results
 ```bash
-# Start Flask API server
-python api/app.py
-```
+# View trained model
+ls models/
 
-### 4. Test API
-```bash
-# Health check
-curl http://localhost:5000/health
-
-# Get model info
-curl http://localhost:5000/model/info
-
-# Make prediction
-curl -X POST http://localhost:5000/model/predict \
-  -H "Content-Type: application/json" \
-  -d '{"features": [1.0, 2.0, 3.0, 4.0]}'
+# View evaluation results
+cat data/processed/evaluation_results.csv
+cat data/processed/evaluation_report.txt
 ```
 
 ## 🔧 Configuration
 
 Edit `config/config.yaml` to configure:
 
-- **Oracle Database**: Connection settings
 - **Model Parameters**: Training configuration
 - **Data Paths**: Input/output directories
-- **Server Settings**: Oracle Cloud deployment
+- **Target Column**: "Total Amount" for sales prediction
 
-## 🚀 Deployment
+## 🚀 CI/CD Pipeline
 
-### Oracle Cloud Setup
-1. **Server Details**:
-   - IP: `139.185.33.139`
-   - Username: `ubuntu`
-   - OS: Ubuntu Server (AI/ML-optimized)
+The GitHub Actions pipeline automatically:
 
-2. **GitHub Secrets** (Required):
-   - `SSH_PRIVATE_KEY`: Your SSH private key
-   - `SSH_USER`: `ubuntu`
-   - `SSH_HOST`: `139.185.33.139`
-   - `SSH_TARGET_DIR`: `/home/ubuntu/ai-project`
+1. **Test**: Run unit tests
+2. **Preprocess**: Extract and transform data
+3. **Train**: Train and evaluate models
+4. **Deploy**: Prepare model for deployment
 
-### CI/CD Pipeline
-The pipeline automatically:
-1. **Tests**: Run unit tests
-2. **Preprocesses**: Extract and transform data
-3. **Trains**: Train and evaluate models
-4. **Deploys**: Deploy to Oracle Cloud server
+## 📊 Sample Dataset
 
-## 📊 API Endpoints
-
-- `GET /` - API information
-- `GET /health` - Health check
-- `GET /model/info` - Model information
-- `POST /model/predict` - Make predictions
-- `GET /data/features` - Get processed features
+The pipeline uses a Sales Dataset with the following features:
+- Date, Gender, Age, Product Category
+- Quantity, Price per Unit, Total Amount (target)
 
 ## 🧪 Testing
 
@@ -123,19 +91,8 @@ python -m pytest tests/test_preprocess.py -v
 
 - `pipelines/ai_pipeline.py` - Main orchestration
 - `config/config.yaml` - Configuration
-- `api/app.py` - Flask application
-- `.github/workflows/data_pipeline.yml` - CI/CD workflow
-
-## 🔄 Migration from Old Structure
-
-The project has been migrated from the old structure to a modular MLOps architecture:
-
-- **Old**: Single scripts in `src/`
-- **New**: Modular ETL, pipelines, and API structure
-- **Old**: Hardcoded Oracle server settings
-- **New**: Flexible configuration with GitHub secrets
-- **Old**: Basic training scripts
-- **New**: Comprehensive ML pipeline with evaluation
+- `data/Sales Dataset.csv` - Sample dataset
+- `.github/workflows/ml_pipeline.yml` - CI/CD workflow
 
 ## 📝 Logs
 
@@ -155,4 +112,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Status**: ✅ Production-ready MLOps pipeline for Oracle Cloud Infrastructure
+**Status**: ✅ Streamlined ML pipeline for sales prediction

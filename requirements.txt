@@ -1,18 +1,15 @@
 # Core ML/AI packages
-cx_Oracle==8.3
-pandas
-scikit-learn
-joblib
+pandas>=1.5.0
+scikit-learn>=1.2.0
+joblib>=1.2.0
+numpy>=1.21.0
 
-# Web API and configuration
-flask
-PyYAML
+# Configuration
+PyYAML>=6.0
 
-# Testing and development
-pytest
-requests
+# Testing
+pytest>=7.0.0
 
-# Data processing and utilities
-numpy
-matplotlib
-seaborn
+# Data visualization (optional)
+matplotlib>=3.5.0
+seaborn>=0.11.0

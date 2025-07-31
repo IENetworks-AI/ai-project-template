@@ -22,37 +22,6 @@ def save_to_csv(df, file_path):
         logger.error(f"Error saving to CSV {file_path}: {e}")
         return False
 
-def save_to_oracle(df, table_name, config):
-    """Save DataFrame to Oracle database"""
-    try:
-        import cx_Oracle
-        connection_string = f"{config['database']['username']}/{config['database']['password']}@{config['database']['host']}:{config['database']['port']}/{config['database']['service_name']}"
-        connection = cx_Oracle.connect(connection_string)
-        
-        # Create table if not exists
-        create_table_sql = f"""
-        CREATE TABLE {table_name} (
-            {', '.join([f'{col} VARCHAR2(255)' for col in df.columns])}
-        )
-        """
-        try:
-            connection.execute(create_table_sql)
-        except:
-            pass  # Table might already exist
-        
-        # Insert data
-        for _, row in df.iterrows():
-            insert_sql = f"INSERT INTO {table_name} VALUES ({', '.join(['?' for _ in df.columns])})"
-            connection.execute(insert_sql, row.values.tolist())
-        
-        connection.commit()
-        connection.close()
-        logger.info(f"Data saved to Oracle table: {table_name}")
-        return True
-    except Exception as e:
-        logger.error(f"Error saving to Oracle database: {e}")
-        return False
-
 def save_model(model, model_name, config):
     """Save trained model"""
     try:

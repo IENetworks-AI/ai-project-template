@@ -20,20 +20,6 @@ def extract_from_csv(file_path):
         logger.error(f"Error extracting from CSV {file_path}: {e}")
         return None
 
-def extract_from_oracle(query, config):
-    """Extract data from Oracle database"""
-    try:
-        import cx_Oracle
-        connection_string = f"{config['database']['username']}/{config['database']['password']}@{config['database']['host']}:{config['database']['port']}/{config['database']['service_name']}"
-        connection = cx_Oracle.connect(connection_string)
-        df = pd.read_sql(query, connection)
-        connection.close()
-        logger.info(f"Successfully extracted {len(df)} records from Oracle database")
-        return df
-    except Exception as e:
-        logger.error(f"Error extracting from Oracle database: {e}")
-        return None
-
 def extract_data(source_type='csv', **kwargs):
     """Main extraction function"""
     config = load_config()
@@ -41,9 +27,6 @@ def extract_data(source_type='csv', **kwargs):
     if source_type == 'csv':
         file_path = kwargs.get('file_path', os.path.join(config['raw_data_path'], 'data.csv'))
         return extract_from_csv(file_path)
-    elif source_type == 'oracle':
-        query = kwargs.get('query', 'SELECT * FROM your_table')
-        return extract_from_oracle(query, config)
     else:
         logger.error(f"Unsupported source type: {source_type}")
         return None 
