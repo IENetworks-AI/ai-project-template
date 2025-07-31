@@ -100,7 +100,12 @@ def main():
             f.write(f"Task: {model_results['task']}\n\n")
             f.write("Performance Metrics:\n")
             for metric, value in evaluation_results.items():
-                f.write(f"  {metric}: {value:.4f}\n")
+                # Skip non-numeric metrics like predictions and actual
+                if metric not in ['predictions', 'actual']:
+                    if isinstance(value, (int, float)):
+                        f.write(f"  {metric}: {value:.4f}\n")
+                    else:
+                        f.write(f"  {metric}: {value}\n")
             f.write(f"\nTraining Records: {len(transformed_data['y_train'])}\n")
             f.write(f"Test Records: {len(transformed_data['y_test'])}\n")
             f.write(f"Features: {len(transformed_data['feature_names'])}\n")
