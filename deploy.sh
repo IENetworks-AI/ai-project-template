@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # Exit on any error
 
-echo "🔄 Starting ML Pipeline deployment..."
+echo "🔄 Starting ML Pipeline API deployment..."
 
 # Function to handle apt locks
 handle_apt_locks() {
@@ -44,28 +44,29 @@ if [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
 fi
 
-# Stop existing ML pipeline service if running
-if sudo systemctl is-active --quiet mlpipeline.service; then
-    echo "🛑 Stopping existing ML pipeline service..."
-    sudo systemctl stop mlpipeline.service
+# Stop existing API service if running
+if sudo systemctl is-active --quiet mlapi.service; then
+    echo "🛑 Stopping existing API service..."
+    sudo systemctl stop mlapi.service
     sleep 2
 fi
 
-# Set up systemd service for the ML pipeline
-echo "🔧 Setting up ML pipeline systemd service..."
-sudo tee /etc/systemd/system/mlpipeline.service > /dev/null << 'EOF'
+# Set up systemd service for the API server
+echo "🔧 Setting up API server systemd service..."
+sudo tee /etc/systemd/system/mlapi.service > /dev/null << 'EOF'
 [Unit]
-Description=ML Pipeline Service
+Description=ML Pipeline API Server
 After=network.target
 
 [Service]
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/ai-project-template
-ExecStart=/home/ubuntu/ai-project-template/venv/bin/python pipelines/ai_pipeline.py
+ExecStart=/home/ubuntu/ai-project-template/venv/bin/python api/app.py
 Restart=on-failure
 RestartSec=5
 Environment=PATH=/home/ubuntu/ai-project-template/venv/bin
+Environment=PORT=5000
 
 [Install]
 WantedBy=multi-user.target
@@ -73,13 +74,34 @@ EOF
 
 # Reload systemd and enable + start the service
 sudo systemctl daemon-reload
-sudo systemctl enable mlpipeline.service
-sudo systemctl restart mlpipeline.service
+sudo systemctl enable mlapi.service
+sudo systemctl restart mlapi.service
 
-echo "✅ ML Pipeline service deployed and started successfully."
+echo "✅ API server deployed and started successfully."
 
 # Check service status
 echo "📊 Checking service status..."
-sudo systemctl status mlpipeline.service --no-pager -l
+sudo systemctl status mlapi.service --no-pager -l
 
-echo "🎉 ML Pipeline deployment completed successfully!" 
+# Wait a moment for the service to start
+sleep 5
+
+# Test the API
+echo "🧪 Testing API endpoints..."
+if curl -f http://localhost:5000/health 2>/dev/null; then
+    echo "✅ API health check passed"
+else
+    echo "⚠️ API health check failed - service might still be starting"
+fi
+
+echo "🎉 ML Pipeline API deployment completed successfully!"
+echo ""
+echo "📋 Access Information:"
+echo "   🌐 Web UI: http://139.185.33.139:5000"
+echo "   🔧 Health Check: http://139.185.33.139:5000/health"
+echo "   📊 Model Info: http://139.185.33.139:5000/model/info"
+echo "   🧪 Test Page: http://139.185.33.139:5000/test"
+echo ""
+echo "📡 API Endpoints:"
+echo "   POST http://139.185.33.139:5000/api/predict - Single prediction"
+echo "   POST http://139.185.33.139:5000/api/batch_predict - Batch predictions" 
