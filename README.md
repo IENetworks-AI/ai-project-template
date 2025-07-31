@@ -26,7 +26,7 @@ ai-project-template/
 
 - **Sample Dataset**: Uses Sales Dataset for training
 - **Automated Pipeline**: Extract, transform, train, evaluate, and deploy
-- **Modern CI/CD**: GitHub Actions with branch-based workflows
+- **Modern CI/CD**: GitHub Actions with consolidated workflow
 - **Team Collaboration**: Test-Branch for safe testing, Main for production
 - **Oracle Cloud Integration**: Automated deployment to Oracle Cloud Infrastructure
 - **Configurable**: YAML-based configuration management
@@ -83,18 +83,29 @@ Edit `config/config.yaml` to configure:
 
 ## 🚀 CI/CD Pipeline
 
-### Test-Branch Workflow
-1. **Test**: Run unit tests
-2. **Preprocess**: Extract and transform data
-3. **Train**: Train and evaluate models
-4. **Summary**: Display results (NO deployment)
+### Consolidated Workflow Jobs
 
-### Main Branch Workflow
-1. **Test**: Run unit tests
-2. **Preprocess**: Extract and transform data
-3. **Train**: Train and evaluate models
-4. **Deploy**: Deploy to Oracle Cloud Infrastructure
-5. **Summary**: Display results and deployment status
+1. **validation**: Code quality, security, documentation, and branch-specific checks
+2. **test**: Run unit tests
+3. **preprocess**: Extract and transform data
+4. **train**: Train and evaluate models
+5. **deploy**: Deploy to Oracle Cloud (Main branch only)
+6. **summary**: Display results and deployment status
+
+### Branch-Specific Behavior
+
+#### Test-Branch
+- ✅ All validation checks
+- ✅ Full ML pipeline (test, preprocess, train)
+- ✅ Performance evaluation
+- ❌ **NO deployment** (safe testing)
+
+#### Main Branch
+- ✅ All validation checks
+- ✅ Full ML pipeline
+- ✅ **Oracle Cloud deployment**
+- ✅ Service configuration
+- ✅ Deployment verification
 
 ## 🚀 Oracle Cloud Deployment
 
@@ -139,8 +150,7 @@ python -m pytest tests/test_preprocess.py -v
 - `pipelines/ai_pipeline.py` - Main orchestration
 - `config/config.yaml` - Configuration
 - `data/Sales Dataset.csv` - Sample dataset
-- `.github/workflows/ml_pipeline.yml` - Main CI/CD workflow
-- `.github/workflows/branch-protection.yml` - Branch protection workflow
+- `.github/workflows/ml_pipeline.yml` - Consolidated CI/CD workflow
 - `deploy.sh` - Oracle server deployment script
 - `WORKFLOW_GUIDE.md` - Modern CI/CD workflow guide
 
@@ -173,4 +183,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Status**: ✅ Streamlined ML pipeline with modern CI/CD workflow and Oracle Cloud deployment
+**Status**: ✅ Streamlined ML pipeline with consolidated CI/CD workflow and Oracle Cloud deployment
