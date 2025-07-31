@@ -51,7 +51,9 @@ ExecStart=/home/ubuntu/ai-project-template/venv/bin/python api/app.py
 Restart=always
 RestartSec=10
 Environment=PATH=/home/ubuntu/ai-project-template/venv/bin
+Environment=HOST=localhost
 Environment=PORT=5000
+Environment=DEBUG=False
 StandardOutput=journal
 StandardError=journal
 

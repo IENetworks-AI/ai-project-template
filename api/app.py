@@ -627,6 +627,16 @@ if __name__ == '__main__':
     else:
         logger.error("Failed to load model")
     
+    # Configuration for different environments
+    import os
+    
+    # Get configuration from environment variables
+    HOST = os.environ.get('HOST', 'localhost')  # Default to localhost
+    PORT = int(os.environ.get('PORT', 5000))    # Default to port 5000
+    DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+    
+    logger.info(f"Starting API server on {HOST}:{PORT}")
+    logger.info(f"Debug mode: {DEBUG}")
+    
     # Run the app
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False) 
+    app.run(host=HOST, port=PORT, debug=DEBUG) 
