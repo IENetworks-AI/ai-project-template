@@ -1,6 +1,6 @@
-# ML Pipeline - Sales Prediction Model
+# Business Insights Dashboard - Sales Analytics
 
-A streamlined ML pipeline for training and deploying a sales prediction model using a sample dataset, with Oracle Cloud Infrastructure deployment, modern CI/CD workflow, and a beautiful web API for testing.
+A modern business intelligence platform for analyzing top product categories by sales performance, featuring a beautiful web dashboard, real-time analytics, and deployable business insights.
 
 ## 🏗️ Architecture
 
@@ -8,32 +8,24 @@ A streamlined ML pipeline for training and deploying a sales prediction model us
 ai-project-template/
 ├── config/           # Configuration files (YAML)
 ├── data/
-│   └── processed/    # Processed data and results
-├── etl/
-│   ├── extract/      # Data extraction (CSV)
-│   ├── transform/    # Data preprocessing & feature engineering
-│   └── load/         # Data & model persistence
-├── pipelines/        # Pipeline orchestration
-├── api/              # Flask API server with web UI
+│   └── Sales Dataset.csv    # Sales data for analysis
+├── api/              # Flask API server with modern web UI
 ├── src/
-│   ├── data/         # Training & evaluation logic
 │   └── utils/        # Utilities & logging
-├── models/           # Trained models
 ├── tests/            # Unit tests
 └── .github/workflows/ # CI/CD pipelines
 ```
 
 ## 🚀 Features
 
-- **Sample Dataset**: Uses Sales Dataset for training
-- **Automated Pipeline**: Extract, transform, train, evaluate, and deploy
-- **Modern CI/CD**: GitHub Actions with consolidated workflow
-- **Team Collaboration**: Test-Branch for safe testing, Main for production
+- **Business Intelligence**: Top N Product Categories by Sales analysis
+- **Modern Dashboard**: Beautiful, responsive web interface with real-time insights
+- **Flexible Date Ranges**: Last month, last quarter, last year, or custom periods
+- **Interactive Analytics**: Dynamic filtering and ranking of product categories
 - **Oracle Cloud Integration**: Automated deployment to Oracle Cloud Infrastructure
-- **Beautiful Web API**: Flask server with modern UI for model testing
-- **Real-time Predictions**: Instant sales predictions via web interface
-- **Configurable**: YAML-based configuration management
-- **Clean Architecture**: Modular ETL pipeline
+- **Real-time Insights**: Instant business intelligence via web interface
+- **Configurable Analysis**: Adjustable top N categories and date ranges
+- **Clean Architecture**: Modular business logic pipeline
 
 ## 🌿 Branching Strategy
 
@@ -59,43 +51,55 @@ Feature Branches → Test-Branch → Main → Production
 pip install -r requirements.txt
 ```
 
-### 2. Run Pipeline
+### 2. Run Business Insights API
 ```bash
-# Run complete ML pipeline
-python pipelines/ai_pipeline.py
+# Start the API server
+python api/app.py
 ```
 
-### 3. Check Results
-```bash
-# View trained model
-ls models/
-
-# View evaluation results
-cat data/processed/evaluation_results.csv
-cat data/processed/evaluation_report.txt
+### 3. Access Dashboard
+Open your browser and navigate to:
+```
+http://localhost:5000
 ```
 
-## 🌐 Web API Testing
+## 🌐 Web Dashboard Features
 
-### Access the Web Interface
-Once deployed to Oracle Cloud, access your model at:
+### Access the Business Intelligence Dashboard
+Once deployed to Oracle Cloud, access your insights at:
 ```
 http://139.185.33.139:5000
 ```
 
-### Features
-- **📊 Beautiful Dashboard**: Modern, responsive web interface
-- **🎯 Real-time Predictions**: Instant sales predictions
-- **🧪 Test Cases**: Pre-built testing scenarios
-- **📡 API Documentation**: Built-in endpoint documentation
-- **🔧 Health Monitoring**: Live model status and performance
+### Dashboard Features
+- **📊 Modern Analytics**: Beautiful, responsive business intelligence interface
+- **🎯 Top Categories**: Real-time ranking of product categories by sales
+- **📅 Flexible Time Periods**: Analyze last month, quarter, year, or custom ranges
+- **📈 Market Share Analysis**: Percentage breakdown of category performance
+- **🔧 Interactive Controls**: Adjust top N categories and date ranges
+- **📡 Real-time Updates**: Instant analysis results
 
 ### API Endpoints
-- `GET /health` - Health check
-- `GET /model/info` - Model information
-- `POST /api/predict` - Single prediction
-- `POST /api/batch_predict` - Batch predictions
-- `GET /test` - Test page with sample scenarios
+- `GET /health` - Health check and data status
+- `POST /api/analyze` - Analyze top product categories
+- `GET /api/data/summary` - Get data summary and available categories
+
+## 📊 Business Insight Model
+
+### Purpose
+The simplified "Model" represents business insights as deployable logic without complex machine learning training, focusing on MLOps pipeline for logic updates.
+
+### Logic: "Top N Product Categories by Sales"
+- **Input**: Date range (last month, last quarter, last year, or custom dates) and N value
+- **Output**: Identifies and returns the top N product categories based on Total Amount sold within the given period
+- **Format**: Structured JSON with rankings, sales amounts, market share percentages, and transaction counts
+
+### Analysis Features
+- **Sales Ranking**: Categories ranked by total sales amount
+- **Market Share**: Percentage of total sales for each category
+- **Transaction Count**: Number of sales transactions per category
+- **Average Sale**: Average transaction value per category
+- **Period Summary**: Total sales and analysis period information
 
 ## 🔧 Configuration
 
@@ -221,38 +225,4 @@ python -m pytest tests/test_preprocess.py -v
 - `config/config.yaml` - Configuration
 - `data/Sales Dataset.csv` - Sample dataset
 - `.github/workflows/ml_pipeline.yml` - Consolidated CI/CD workflow
-- `deploy.sh` - Oracle server deployment script
-- `WORKFLOW_GUIDE.md` - Modern CI/CD workflow guide
-- `MODEL_TESTING_GUIDE.md` - Comprehensive testing guide
-
-## 📝 Logs
-
-Logs are automatically generated in the `logs/` directory with timestamps and structured formatting.
-
-## 🤝 Contributing
-
-### For Developers
-1. Create feature branch: `git checkout -b feature/description`
-2. Make changes and commit
-3. Create PR to `Test-Branch` for review
-4. Wait for admin approval
-
-### For Admins
-1. Review PRs in `Test-Branch`
-2. Merge to `main` when approved
-3. Monitor deployment to Oracle Cloud
-
-## 📚 Documentation
-
-- `WORKFLOW_GUIDE.md` - Complete workflow guide
-- `ORACLE_DEPLOYMENT_SETUP.md` - Oracle deployment setup
-- `MODEL_TESTING_GUIDE.md` - Comprehensive testing guide
-- `README.md` - This file
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
----
-
-**Status**: ✅ Streamlined ML pipeline with consolidated CI/CD workflow, Oracle Cloud deployment, and beautiful web API for testing
+- `

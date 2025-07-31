@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-ML Pipeline API Server
-Provides REST API and Web UI for testing the deployed sales prediction model
+Business Insight API Server
+Provides REST API and Web UI for analyzing top product categories by sales
 """
 
 import os
 import sys
-import joblib
 import pandas as pd
 import numpy as np
 from flask import Flask, request, jsonify, render_template_string
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from pathlib import Path
 
@@ -29,203 +28,367 @@ HOME_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Prediction Model API</title>
+    <title>Business Insights Dashboard</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #333;
-        }
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
+        * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.95rem;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
         input:focus, select:focus {
             outline: none;
             border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        button {
+        
+        .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 12px 30px;
+            padding: 15px 30px;
             border: none;
-            border-radius: 5px;
+            border-radius: 12px;
             font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
             width: 100%;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        button:hover {
-            opacity: 0.9;
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
-        .result {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 5px;
-            font-weight: 600;
+        
+        .btn:active {
+            transform: translateY(0);
         }
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+        
+        .results {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        
+        .result-item {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid #667eea;
+            transition: transform 0.3s ease;
         }
-        .info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+        
+        .result-item:hover {
+            transform: translateX(5px);
         }
-        .endpoints {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 14px;
-        }
-        .endpoint {
+        
+        .result-item h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
             margin-bottom: 10px;
-            padding: 8px;
+        }
+        
+        .result-item .rank {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .result-item .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat {
             background: white;
-            border-radius: 3px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #fee;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #c53030;
+        }
+        
+        .success {
+            background: #f0fff4;
+            color: #2f855a;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #2f855a;
+        }
+        
+        .info-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-panel h3 {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .info-panel p {
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🎯 Sales Prediction Model API</h1>
-        <p>Test your deployed ML model on Oracle Cloud</p>
-    </div>
-
     <div class="container">
-        <div class="card">
-            <h2>📊 Single Prediction</h2>
-            <form id="predictionForm">
-                <div class="form-group">
-                    <label for="date">Date:</label>
-                    <input type="date" id="date" name="date" required>
-                </div>
-                <div class="form-group">
-                    <label for="gender">Gender:</label>
-                    <select id="gender" name="gender" required>
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="age">Age:</label>
-                    <input type="number" id="age" name="age" min="18" max="100" required>
-                </div>
-                <div class="form-group">
-                    <label for="product_category">Product Category:</label>
-                    <select id="product_category" name="product_category" required>
-                        <option value="">Select Category</option>
-                        <option value="Beauty">Beauty</option>
-                        <option value="Clothing">Clothing</option>
-                        <option value="Electronics">Electronics</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="quantity">Quantity:</label>
-                    <input type="number" id="quantity" name="quantity" min="1" max="10" required>
-                </div>
-                <div class="form-group">
-                    <label for="price_per_unit">Price per Unit:</label>
-                    <input type="number" id="price_per_unit" name="price_per_unit" min="1" step="0.01" required>
-                </div>
-                <button type="submit">Predict Total Amount</button>
-            </form>
-            <div id="predictionResult"></div>
+        <div class="header">
+            <h1>📊 Business Insights Dashboard</h1>
+            <p>Analyze Top Product Categories by Sales Performance</p>
         </div>
 
-        <div class="card">
-            <h2>🔧 API Information</h2>
-            <div class="info">
-                <strong>Model Status:</strong> <span id="modelStatus">Loading...</span><br>
-                <strong>Features:</strong> <span id="featureCount">Loading...</span><br>
-                <strong>Last Updated:</strong> <span id="lastUpdated">Loading...</span>
-            </div>
-            
-            <h3>📡 API Endpoints</h3>
-            <div class="endpoints">
-                <div class="endpoint">
-                    <strong>GET</strong> /health - Health check
-                </div>
-                <div class="endpoint">
-                    <strong>GET</strong> /model/info - Model information
-                </div>
-                <div class="endpoint">
-                    <strong>POST</strong> /api/predict - Single prediction
-                </div>
-                <div class="endpoint">
-                    <strong>POST</strong> /api/batch_predict - Batch predictions
+        <div class="main-content">
+            <div class="card">
+                <h2>🎯 Analysis Parameters</h2>
+                <form id="analysisForm">
+                    <div class="form-group">
+                        <label for="dateRange">Date Range (2023 Data):</label>
+                        <select id="dateRange" name="dateRange" required>
+                            <option value="">Select Date Range</option>
+                            <option value="last_month">December 2023 (Last Month)</option>
+                            <option value="last_quarter">Q4 2023 (Oct-Dec)</option>
+                            <option value="last_year">Full Year 2023</option>
+                            <option value="custom">Custom Range (2023)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="customDates" style="display: none;">
+                        <label for="startDate">Start Date (2023):</label>
+                        <input type="date" id="startDate" name="startDate" min="2023-01-01" max="2023-12-31">
+                    </div>
+                    
+                    <div class="form-group" id="customDates2" style="display: none;">
+                        <label for="endDate">End Date (2023):</label>
+                        <input type="date" id="endDate" name="endDate" min="2023-01-01" max="2023-12-31">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="topN">Top N Categories:</label>
+                        <input type="number" id="topN" name="topN" min="1" max="20" value="5" required>
+                    </div>
+                    
+                    <button type="submit" class="btn">🚀 Analyze Sales Data</button>
+                </form>
+                
+                <div class="info-panel">
+                    <h3>💡 How it works</h3>
+                    <p>This insight model analyzes your 2023 sales data to identify the top-performing product categories based on total sales amount within your specified time period.</p>
+                    <p><strong>Available Data:</strong> January 1, 2023 - December 31, 2023</p>
                 </div>
             </div>
 
-            <h3>🧪 Quick Test</h3>
-            <button onclick="testAPI()">Test API Connection</button>
-            <div id="testResult"></div>
+            <div class="results">
+                <h2>📈 Analysis Results</h2>
+                <div id="resultsContent">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Select parameters and click "Analyze Sales Data" to get started</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Load model info on page load
-        window.onload = function() {
-            loadModelInfo();
-        };
+        // Handle date range selection
+        document.getElementById('dateRange').addEventListener('change', function() {
+            const customDates = document.getElementById('customDates');
+            const customDates2 = document.getElementById('customDates2');
+            
+            if (this.value === 'custom') {
+                customDates.style.display = 'block';
+                customDates2.style.display = 'block';
+            } else {
+                customDates.style.display = 'none';
+                customDates2.style.display = 'none';
+            }
+        });
 
-        // Handle prediction form submission
-        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+        // Handle form submission
+        document.getElementById('analysisForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const formData = new FormData(e.target);
             const data = {
-                Date: formData.get('date'),
-                Gender: formData.get('gender'),
-                Age: parseInt(formData.get('age')),
-                'Product Category': formData.get('product_category'),
-                Quantity: parseInt(formData.get('quantity')),
-                'Price per Unit': parseFloat(formData.get('price_per_unit'))
+                date_range: formData.get('dateRange'),
+                start_date: formData.get('startDate'),
+                end_date: formData.get('endDate'),
+                top_n: parseInt(formData.get('topN'))
             };
 
-            fetch('/api/predict', {
+            // Show loading
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing sales data...</p>
+                </div>
+            `;
+
+            fetch('/api/analyze', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -234,171 +397,52 @@ HOME_TEMPLATE = """
             })
             .then(response => response.json())
             .then(data => {
-                const resultDiv = document.getElementById('predictionResult');
                 if (data.error) {
-                    resultDiv.innerHTML = `<div class="error">❌ Error: ${data.error}</div>`;
+                    resultsContent.innerHTML = `<div class="error">❌ Error: ${data.error}</div>`;
                 } else {
-                    resultDiv.innerHTML = `
-                        <div class="success">
-                            ✅ Prediction: $${data.prediction.toFixed(2)}<br>
-                            📊 Input: ${JSON.stringify(data.input_data, null, 2)}
-                        </div>
-                    `;
+                    displayResults(data.results, data.summary);
                 }
             })
             .catch(error => {
-                document.getElementById('predictionResult').innerHTML = 
-                    `<div class="error">❌ Error: ${error.message}</div>`;
+                resultsContent.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
             });
         });
 
-        // Load model information
-        function loadModelInfo() {
-            fetch('/model/info')
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    document.getElementById('modelStatus').textContent = 'Error loading model';
-                    document.getElementById('featureCount').textContent = 'N/A';
-                    document.getElementById('lastUpdated').textContent = 'N/A';
-                } else {
-                    document.getElementById('modelStatus').textContent = '✅ Loaded';
-                    document.getElementById('featureCount').textContent = data.features_count;
-                    document.getElementById('lastUpdated').textContent = new Date(data.model_loaded_at).toLocaleString();
-                }
-            })
-            .catch(error => {
-                document.getElementById('modelStatus').textContent = '❌ Error';
-                document.getElementById('featureCount').textContent = 'N/A';
-                document.getElementById('lastUpdated').textContent = 'N/A';
-            });
-        }
-
-        // Test API connection
-        function testAPI() {
-            fetch('/health')
-            .then(response => response.json())
-            .then(data => {
-                const resultDiv = document.getElementById('testResult');
-                if (data.status === 'healthy') {
-                    resultDiv.innerHTML = `
-                        <div class="success">
-                            ✅ API is healthy<br>
-                            Model loaded: ${data.model_loaded}<br>
-                            Scaler loaded: ${data.scaler_loaded}
+        function displayResults(results, summary) {
+            const resultsContent = document.getElementById('resultsContent');
+            
+            let html = `
+                <div class="success">
+                    <h3>✅ Analysis Complete</h3>
+                    <p><strong>Period:</strong> ${summary.period}</p>
+                    <p><strong>Total Sales:</strong> $${summary.total_sales.toLocaleString()}</p>
+                    <p><strong>Categories Analyzed:</strong> ${summary.categories_count}</p>
+                </div>
+            `;
+            
+            results.forEach((result, index) => {
+                const rank = index + 1;
+                const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '🏆';
+                
+                html += `
+                    <div class="result-item">
+                        <span class="rank">${rankEmoji} Rank #${rank}</span>
+                        <h3>${result.category}</h3>
+                        <div class="stats">
+                            <div class="stat">
+                                <div class="stat-value">$${result.total_sales.toLocaleString()}</div>
+                                <div class="stat-label">Total Sales</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${result.percentage.toFixed(1)}%</div>
+                                <div class="stat-label">Market Share</div>
+                            </div>
                         </div>
-                    `;
-                } else {
-                    resultDiv.innerHTML = `<div class="error">❌ API is not healthy</div>`;
-                }
-            })
-            .catch(error => {
-                document.getElementById('testResult').innerHTML = 
-                    `<div class="error">❌ Error: ${error.message}</div>`;
+                    </div>
+                `;
             });
-        }
-    </script>
-</body>
-</html>
-"""
-
-TEST_TEMPLATE = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Model Test Page</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .test-case { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-        .result { margin-top: 10px; padding: 10px; border-radius: 3px; }
-        .success { background-color: #d4edda; color: #155724; }
-        .error { background-color: #f8d7da; color: #721c24; }
-    </style>
-</head>
-<body>
-    <h1>🧪 Model Test Page</h1>
-    
-    <div class="test-case">
-        <h3>Test Case 1: Beauty Product</h3>
-        <button onclick="testCase1()">Run Test</button>
-        <div id="result1"></div>
-    </div>
-
-    <div class="test-case">
-        <h3>Test Case 2: Electronics Product</h3>
-        <button onclick="testCase2()">Run Test</button>
-        <div id="result2"></div>
-    </div>
-
-    <div class="test-case">
-        <h3>Test Case 3: Clothing Product</h3>
-        <button onclick="testCase3()">Run Test</button>
-        <div id="result3"></div>
-    </div>
-
-    <script>
-        function testCase1() {
-            const data = {
-                Date: '2024-01-15',
-                Gender: 'Female',
-                Age: 25,
-                'Product Category': 'Beauty',
-                Quantity: 2,
-                'Price per Unit': 50.0
-            };
-            runTest(data, 'result1');
-        }
-
-        function testCase2() {
-            const data = {
-                Date: '2024-01-15',
-                Gender: 'Male',
-                Age: 35,
-                'Product Category': 'Electronics',
-                Quantity: 1,
-                'Price per Unit': 500.0
-            };
-            runTest(data, 'result2');
-        }
-
-        function testCase3() {
-            const data = {
-                Date: '2024-01-15',
-                Gender: 'Female',
-                Age: 28,
-                'Product Category': 'Clothing',
-                Quantity: 3,
-                'Price per Unit': 100.0
-            };
-            runTest(data, 'result3');
-        }
-
-        function runTest(data, resultId) {
-            fetch('/api/predict', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                const resultDiv = document.getElementById(resultId);
-                if (result.error) {
-                    resultDiv.innerHTML = `<div class="result error">❌ Error: ${result.error}</div>`;
-                } else {
-                    resultDiv.innerHTML = `
-                        <div class="result success">
-                            ✅ Prediction: $${result.prediction.toFixed(2)}<br>
-                            📊 Input: ${JSON.stringify(data, null, 2)}
-                        </div>
-                    `;
-                }
-            })
-            .catch(error => {
-                document.getElementById(resultId).innerHTML = 
-                    `<div class="result error">❌ Error: ${error.message}</div>`;
-            });
+            
+            resultsContent.innerHTML = html;
         }
     </script>
 </body>
@@ -407,129 +451,124 @@ TEST_TEMPLATE = """
 
 app = Flask(__name__)
 
-# Global variables for model and scaler
-model = None
-scaler = None
-feature_names = None
+# Global variable for sales data
+sales_data = None
 
-def load_model():
-    """Load the trained model and scaler"""
-    global model, scaler, feature_names
+def load_sales_data():
+    """Load the sales dataset"""
+    global sales_data
     
     try:
-        # Define paths using project root
-        models_dir = project_root / 'models'
-        data_dir = project_root / 'data' / 'processed'
-        
-        logger.info(f"Project root: {project_root}")
-        logger.info(f"Models directory: {models_dir}")
-        logger.info(f"Data directory: {data_dir}")
-        
-        # Load model
-        model_path = models_dir / 'sales_prediction_model.joblib'
-        if model_path.exists():
-            model = joblib.load(str(model_path))
-            logger.info(f"Model loaded successfully from {model_path}")
+        data_path = project_root / 'data' / 'Sales Dataset.csv'
+        if data_path.exists():
+            sales_data = pd.read_csv(str(data_path))
+            # Convert Date column to datetime
+            sales_data['Date'] = pd.to_datetime(sales_data['Date'])
+            logger.info(f"Sales data loaded successfully: {len(sales_data)} records")
+            return True
         else:
-            logger.error(f"Model file not found at {model_path}")
-            # Check if model files exist in root directory (legacy)
-            root_model_path = project_root / 'sales_prediction_model.joblib'
-            if root_model_path.exists():
-                logger.info(f"Found model in root directory, moving to models/")
-                model = joblib.load(str(root_model_path))
-                # Move file to correct location
-                import shutil
-                shutil.move(str(root_model_path), str(model_path))
-                logger.info(f"Model moved to {model_path}")
-            else:
-                logger.error(f"Model file not found in root directory either")
-                return False
-        
-        # Load scaler
-        scaler_path = models_dir / 'feature_scaler.joblib'
-        if scaler_path.exists():
-            scaler = joblib.load(str(scaler_path))
-            logger.info(f"Scaler loaded successfully from {scaler_path}")
-        else:
-            logger.error(f"Scaler file not found at {scaler_path}")
-            # Check if scaler files exist in root directory (legacy)
-            root_scaler_path = project_root / 'feature_scaler.joblib'
-            if root_scaler_path.exists():
-                logger.info(f"Found scaler in root directory, moving to models/")
-                scaler = joblib.load(str(root_scaler_path))
-                # Move file to correct location
-                import shutil
-                shutil.move(str(root_scaler_path), str(scaler_path))
-                logger.info(f"Scaler moved to {scaler_path}")
-            else:
-                logger.error(f"Scaler file not found in root directory either")
-                return False
-        
-        # Load feature names from processed data
-        features_path = data_dir / 'features.csv'
-        if features_path.exists():
-            features_df = pd.read_csv(str(features_path))
-            feature_names = features_df.columns.tolist()
-            logger.info(f"Feature names loaded: {len(feature_names)} features")
-        else:
-            logger.warning(f"Features file not found at {features_path}, using default feature names")
-            feature_names = ['feature_' + str(i) for i in range(65)]  # Default based on your model
-        
-        return True
-        
+            logger.error(f"Sales data file not found at {data_path}")
+            return False
+            
     except Exception as e:
-        logger.error(f"Error loading model: {e}")
+        logger.error(f"Error loading sales data: {e}")
         return False
 
-def preprocess_input(data):
-    """Preprocess input data for prediction"""
+def get_date_range(date_range, start_date=None, end_date=None):
+    """Get date range based on selection - adapted for 2023 data"""
+    # Since our data is from 2023, we'll use 2023 as the reference year
+    reference_year = 2023
+    reference_date = datetime(2023, 12, 31)  # End of 2023
+    
+    if date_range == 'last_month':
+        # Last month of 2023 (December)
+        start = datetime(2023, 12, 1)
+        end = datetime(2023, 12, 31)
+    elif date_range == 'last_quarter':
+        # Last quarter of 2023 (October-December)
+        start = datetime(2023, 10, 1)
+        end = datetime(2023, 12, 31)
+    elif date_range == 'last_year':
+        # Full year 2023
+        start = datetime(2023, 1, 1)
+        end = datetime(2023, 12, 31)
+    elif date_range == 'custom':
+        if start_date and end_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+        else:
+            raise ValueError("Custom date range requires both start and end dates")
+    else:
+        raise ValueError("Invalid date range")
+    
+    return start, end
+
+def analyze_top_categories(date_range, start_date=None, end_date=None, top_n=5):
+    """Analyze top N product categories by sales"""
     try:
-        # Convert input to DataFrame
-        if isinstance(data, dict):
-            df = pd.DataFrame([data])
-        else:
-            df = pd.DataFrame(data)
+        if sales_data is None:
+            raise ValueError("Sales data not loaded")
         
-        # Handle date column
-        if 'Date' in df.columns:
-            df['Date'] = pd.to_datetime(df['Date'])
-            df['Date_year'] = df['Date'].dt.year
-            df['Date_month'] = df['Date'].dt.month
-            df['Date_day'] = df['Date'].dt.day
-            df['Date_dayofweek'] = df['Date'].dt.dayofweek
-            df = df.drop(columns=['Date'])
+        # Get date range
+        start, end = get_date_range(date_range, start_date, end_date)
         
-        # Handle categorical columns
-        categorical_columns = ['Gender', 'Product Category']
-        for col in categorical_columns:
-            if col in df.columns:
-                # Simple encoding - you might want to use the same encoding as training
-                df[f'{col}_encoded'] = df[col].astype('category').cat.codes
-                df = df.drop(columns=[col])
+        # Filter data by date range
+        mask = (sales_data['Date'] >= start) & (sales_data['Date'] <= end)
+        filtered_data = sales_data[mask]
         
-        # Ensure all required features are present
-        if feature_names:
-            missing_features = set(feature_names) - set(df.columns)
-            for feature in missing_features:
-                df[feature] = 0  # Default value for missing features
-            
-            # Reorder columns to match training features
-            df = df[feature_names]
+        if len(filtered_data) == 0:
+            raise ValueError(f"No sales data found for the selected period: {start.strftime('%Y-%m-%d')} to {end.strftime('%Y-%m-%d')}")
         
-        # Scale features
-        if scaler:
-            df_scaled = scaler.transform(df)
-            return df_scaled
-        else:
-            return df.values
-            
+        # Group by product category and calculate total sales
+        category_sales = filtered_data.groupby('Product Category')['Total Amount'].agg([
+            'sum', 'count', 'mean'
+        ]).reset_index()
+        
+        category_sales.columns = ['category', 'total_sales', 'transaction_count', 'avg_sale']
+        
+        # Calculate percentage of total sales
+        total_sales = category_sales['total_sales'].sum()
+        category_sales['percentage'] = (category_sales['total_sales'] / total_sales) * 100
+        
+        # Sort by total sales and get top N
+        top_categories = category_sales.nlargest(top_n, 'total_sales')
+        
+        # Format results
+        results = []
+        for _, row in top_categories.iterrows():
+            results.append({
+                'category': row['category'],
+                'total_sales': float(row['total_sales']),
+                'transaction_count': int(row['transaction_count']),
+                'avg_sale': float(row['avg_sale']),
+                'percentage': float(row['percentage'])
+            })
+        
+        # Create summary
+        period_text = f"{start.strftime('%Y-%m-%d')} to {end.strftime('%Y-%m-%d')}"
+        if date_range == 'last_month':
+            period_text = f"Last Month ({start.strftime('%B %Y')})"
+        elif date_range == 'last_quarter':
+            period_text = f"Last Quarter ({start.strftime('%B %Y')} - {end.strftime('%B %Y')})"
+        elif date_range == 'last_year':
+            period_text = f"Last Year ({start.year})"
+        
+        summary = {
+            'period': period_text,
+            'total_sales': float(total_sales),
+            'categories_count': len(category_sales),
+            'records_analyzed': len(filtered_data)
+        }
+        
+        return results, summary
+        
     except Exception as e:
-        logger.error(f"Error preprocessing input: {e}")
-        return None
+        logger.error(f"Error analyzing categories: {e}")
+        raise
 
 @app.route('/')
 def home():
-    """Home page with model information and prediction form"""
+    """Home page with business insights dashboard"""
     return render_template_string(HOME_TEMPLATE)
 
 @app.route('/health')
@@ -537,95 +576,75 @@ def health():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'model_loaded': model is not None,
-        'scaler_loaded': scaler is not None,
+        'data_loaded': sales_data is not None,
+        'records_count': len(sales_data) if sales_data is not None else 0,
         'timestamp': datetime.now().isoformat()
     })
 
-@app.route('/model/info')
-def model_info():
-    """Get model information"""
-    if model is None:
-        return jsonify({'error': 'Model not loaded'}), 500
-    
-    return jsonify({
-        'model_type': type(model).__name__,
-        'features_count': len(feature_names) if feature_names else 0,
-        'feature_names': feature_names[:10] if feature_names else [],  # Show first 10
-        'model_loaded_at': datetime.now().isoformat()
-    })
-
-@app.route('/api/predict', methods=['POST'])
-def predict():
-    """Make prediction API endpoint"""
+@app.route('/api/analyze', methods=['POST'])
+def analyze():
+    """Analyze top product categories by sales"""
     try:
-        if model is None:
-            return jsonify({'error': 'Model not loaded'}), 500
+        if sales_data is None:
+            return jsonify({'error': 'Sales data not loaded'}), 500
         
         # Get input data
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
         
-        # Preprocess input
-        processed_data = preprocess_input(data)
-        if processed_data is None:
-            return jsonify({'error': 'Error preprocessing input data'}), 400
+        # Extract parameters
+        date_range = data.get('date_range')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        top_n = data.get('top_n', 5)
         
-        # Make prediction
-        prediction = model.predict(processed_data)
+        if not date_range:
+            return jsonify({'error': 'Date range is required'}), 400
+        
+        # Analyze data
+        results, summary = analyze_top_categories(date_range, start_date, end_date, top_n)
         
         return jsonify({
-            'prediction': float(prediction[0]),
-            'input_data': data,
+            'results': results,
+            'summary': summary,
             'timestamp': datetime.now().isoformat()
         })
         
     except Exception as e:
-        logger.error(f"Prediction error: {e}")
+        logger.error(f"Analysis error: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/batch_predict', methods=['POST'])
-def batch_predict():
-    """Batch prediction API endpoint"""
+@app.route('/api/data/summary')
+def data_summary():
+    """Get summary of available data"""
     try:
-        if model is None:
-            return jsonify({'error': 'Model not loaded'}), 500
+        if sales_data is None:
+            return jsonify({'error': 'Sales data not loaded'}), 500
         
-        # Get input data
-        data = request.get_json()
-        if not data or not isinstance(data, list):
-            return jsonify({'error': 'No data provided or invalid format'}), 400
+        summary = {
+            'total_records': len(sales_data),
+            'date_range': {
+                'start': sales_data['Date'].min().strftime('%Y-%m-%d'),
+                'end': sales_data['Date'].max().strftime('%Y-%m-%d')
+            },
+            'categories': sales_data['Product Category'].unique().tolist(),
+            'total_sales': float(sales_data['Total Amount'].sum()),
+            'avg_sale': float(sales_data['Total Amount'].mean())
+        }
         
-        # Preprocess input
-        processed_data = preprocess_input(data)
-        if processed_data is None:
-            return jsonify({'error': 'Error preprocessing input data'}), 400
-        
-        # Make predictions
-        predictions = model.predict(processed_data)
-        
-        return jsonify({
-            'predictions': [float(p) for p in predictions],
-            'input_data': data,
-            'timestamp': datetime.now().isoformat()
-        })
+        return jsonify(summary)
         
     except Exception as e:
-        logger.error(f"Batch prediction error: {e}")
+        logger.error(f"Data summary error: {e}")
         return jsonify({'error': str(e)}), 500
-
-@app.route('/test')
-def test_page():
-    """Test page with sample predictions"""
-    return render_template_string(TEST_TEMPLATE)
 
 if __name__ == '__main__':
-    # Load model on startup
-    if load_model():
-        logger.info("Model loaded successfully")
+    # Load sales data on startup
+    if load_sales_data():
+        logger.info("Sales data loaded successfully")
     else:
-        logger.error("Failed to load model")
+        logger.error("Failed to load sales data")
     
     # Configuration for different environments
     import os
@@ -635,7 +654,7 @@ if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 5000))    # Default to port 5000
     DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
     
-    logger.info(f"Starting API server on {HOST}:{PORT}")
+    logger.info(f"Starting Business Insights API server on {HOST}:{PORT}")
     logger.info(f"Debug mode: {DEBUG}")
     
     # Run the app
