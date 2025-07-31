@@ -416,8 +416,9 @@ jobs:
             # Reload systemd and enable service
             sudo systemctl daemon-reload
             sudo systemctl enable mlapi.service
+            sudo systemctl start mlapi.service
             
-            echo "✅ API server service configured and enabled!"
+            echo "✅ API server service configured, enabled, and started!"
             echo "✅ Deployment completed successfully!"
           EOF
 
@@ -443,11 +444,39 @@ jobs:
               echo "⚠️ Models directory not found"
             fi
             
-            # Check if service is configured
+            # Check if service is configured and running
             if sudo systemctl is-enabled mlapi.service; then
               echo "✅ API server service is enabled"
             else
               echo "❌ API server service is not enabled"
+              echo "🔧 Attempting to enable service..."
+              sudo systemctl enable mlapi.service
+            fi
+            
+            if sudo systemctl is-active mlapi.service; then
+              echo "✅ API server service is running"
+            else
+              echo "❌ API server service is not running"
+              echo "🔧 Attempting to start service..."
+              sudo systemctl start mlapi.service
+              sleep 5
+              if sudo systemctl is-active mlapi.service; then
+                echo "✅ API server service started successfully"
+              else
+                echo "❌ Failed to start API server service"
+                echo "📋 Service logs:"
+                sudo journalctl -u mlapi.service -n 20 --no-pager
+              fi
+            fi
+            
+            # Test API health
+            echo "🧪 Testing API health..."
+            if curl -f http://localhost:5000/health 2>/dev/null; then
+              echo "✅ API health check passed"
+            else
+              echo "⚠️ API health check failed - service might still be starting"
+              echo "📋 Service status:"
+              sudo systemctl status mlapi.service --no-pager -l
             fi
             
             echo "🎉 Deployment verification completed successfully!"

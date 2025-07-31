@@ -73,9 +73,18 @@ WantedBy=multi-user.target
 EOF
 
 # Reload systemd and enable + start the service
+echo "🔄 Reloading systemd daemon..."
 sudo systemctl daemon-reload
+
+echo "🔧 Enabling API server service..."
 sudo systemctl enable mlapi.service
-sudo systemctl restart mlapi.service
+
+echo "🚀 Starting API server service..."
+sudo systemctl start mlapi.service
+
+# Wait for service to start
+echo "⏳ Waiting for service to start..."
+sleep 5
 
 echo "✅ API server deployed and started successfully."
 
@@ -91,7 +100,18 @@ echo "🧪 Testing API endpoints..."
 if curl -f http://localhost:5000/health 2>/dev/null; then
     echo "✅ API health check passed"
 else
-    echo "⚠️ API health check failed - service might still be starting"
+    echo "⚠️ API health check failed - checking service logs..."
+    sudo journalctl -u mlapi.service -n 20 --no-pager
+    echo "🔧 Attempting to restart service..."
+    sudo systemctl restart mlapi.service
+    sleep 5
+    if curl -f http://localhost:5000/health 2>/dev/null; then
+        echo "✅ API health check passed after restart"
+    else
+        echo "❌ API health check still failing"
+        echo "📋 Service logs:"
+        sudo journalctl -u mlapi.service -n 30 --no-pager
+    fi
 fi
 
 echo "🎉 ML Pipeline API deployment completed successfully!"
@@ -104,4 +124,9 @@ echo "   🧪 Test Page: http://139.185.33.139:5000/test"
 echo ""
 echo "📡 API Endpoints:"
 echo "   POST http://139.185.33.139:5000/api/predict - Single prediction"
-echo "   POST http://139.185.33.139:5000/api/batch_predict - Batch predictions" 
+echo "   POST http://139.185.33.139:5000/api/batch_predict - Batch predictions"
+echo ""
+echo "🔧 Service Management:"
+echo "   sudo systemctl status mlapi.service - Check status"
+echo "   sudo systemctl restart mlapi.service - Restart service"
+echo "   sudo journalctl -u mlapi.service -f - View logs" 
