@@ -1,0 +1,89 @@
+# Kafka Configuration for ML Pipeline System
+
+kafka:
+  # Bootstrap servers (comma-separated list)
+  bootstrap_servers: "localhost:9092"
+  
+  # Security settings
+  security_protocol: "PLAINTEXT"  # PLAINTEXT, SASL_PLAINTEXT, SASL_SSL, SSL
+  sasl_mechanism: "PLAIN"  # PLAIN, SCRAM-SHA-256, SCRAM-SHA-512
+  
+  # Authentication (if using SASL)
+  # sasl_username: ""
+  # sasl_password: ""
+  
+  # SSL settings (if using SSL)
+  ssl_cafile: ""
+  ssl_certfile: ""
+  ssl_keyfile: ""
+  ssl_password: ""
+
+# Topics configuration
+topics:
+  # Data ingestion topics
+  raw_data_topic: "ml-pipeline-raw-data"
+  processed_data_topic: "ml-pipeline-processed-data"
+  
+  # Model training topics
+  model_training_topic: "ml-pipeline-model-training"
+  model_evaluation_topic: "ml-pipeline-model-evaluation"
+  
+  # Prediction topics
+  prediction_requests_topic: "ml-pipeline-prediction-requests"
+  prediction_results_topic: "ml-pipeline-prediction-results"
+  
+  # Monitoring topics
+  pipeline_monitoring_topic: "ml-pipeline-monitoring"
+  model_monitoring_topic: "ml-pipeline-model-monitoring"
+  
+  # Alert topics
+  alerts_topic: "ml-pipeline-alerts"
+
+# Producer settings
+producer:
+  acks: "all"  # 0, 1, or "all"
+  retries: 3
+  batch_size: 16384
+  linger_ms: 5
+  buffer_memory: 33554432
+  compression_type: "snappy"  # none, gzip, snappy, lz4, zstd
+  max_request_size: 1048576
+  request_timeout_ms: 30000
+
+# Consumer settings
+consumer:
+  group_id: "ml-pipeline-consumer-group"
+  auto_offset_reset: "earliest"  # earliest, latest
+  enable_auto_commit: true
+  auto_commit_interval_ms: 5000
+  session_timeout_ms: 30000
+  heartbeat_interval_ms: 3000
+  max_poll_records: 500
+  fetch_max_wait_ms: 500
+  fetch_min_bytes: 1
+  fetch_max_bytes: 52428800
+
+# Schema Registry (if using Avro)
+schema_registry:
+  url: "http://localhost:8081"
+  enabled: false
+
+# Monitoring and metrics
+monitoring:
+  enabled: true
+  metrics_interval_seconds: 60
+  health_check_interval_seconds: 30
+  
+# Error handling
+error_handling:
+  max_retries: 3
+  retry_delay_seconds: 5
+  dead_letter_topic: "ml-pipeline-dead-letter"
+  enable_dead_letter_queue: true
+
+# Performance tuning
+performance:
+  producer_threads: 2
+  consumer_threads: 4
+  batch_processing_size: 1000
+  processing_timeout_seconds: 300 

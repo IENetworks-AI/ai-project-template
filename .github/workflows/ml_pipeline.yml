@@ -154,6 +154,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Setup Kafka (if available)
+        run: |
+          echo "🔧 Setting up Kafka for testing..."
+          if command -v docker &> /dev/null && command -v docker-compose &> /dev/null; then
+            echo "✅ Docker and Docker Compose available"
+            echo "🚀 Starting Kafka services..."
+            docker-compose -f docker-compose.kafka.yml up -d
+            echo "⏳ Waiting for Kafka to be ready..."
+            sleep 30
+            echo "✅ Kafka setup completed"
+          else
+            echo "⚠️ Docker not available, skipping Kafka setup"
+          fi
+
       - name: Run tests
         run: |
           python -m pytest tests/ -v
