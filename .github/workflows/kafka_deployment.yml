@@ -1,0 +1,214 @@
+name: Kafka Deployment on Oracle
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'deployment/oracle_kafka_*.sh'
+      - 'config/oracle_kafka_config.yaml'
+      - 'src/oracle_kafka_integration.py'
+      - 'test_oracle_kafka.py'
+      - '.github/workflows/kafka_deployment.yml'
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force Kafka deployment even if no changes'
+        required: false
+        default: 'false'
+
+jobs:
+  kafka-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Oracle Deployment Configuration
+        id: check-deployment
+        run: |
+          if [ -n "${{ secrets.ORACLE_SSH_KEY }}" ]; then
+            echo "oracle_deploy=true" >> $GITHUB_OUTPUT
+            echo "Oracle deployment secrets found - proceeding with Kafka deployment"
+          else
+            echo "oracle_deploy=false" >> $GITHUB_OUTPUT
+            echo "Oracle deployment secrets not found - skipping Kafka deployment"
+          fi
+
+      - name: Setup SSH
+        if: steps.check-deployment.outputs.oracle_deploy == 'true'
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ORACLE_SSH_KEY }}" > ~/.ssh/oracle.key
+          chmod 600 ~/.ssh/oracle.key
+          ssh-keyscan -H 139.185.33.139 >> ~/.ssh/known_hosts
+
+      - name: Test SSH Connection
+        if: steps.check-deployment.outputs.oracle_deploy == 'true'
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 "echo '✅ SSH connection successful'; uname -a"
+
+      - name: Deploy Kafka Files to Oracle
+        if: steps.check-deployment.outputs.oracle_deploy == 'true'
+        run: |
+          echo "🚀 Deploying Kafka files to Oracle Cloud..."
+          
+          # Deploy Kafka deployment scripts
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key \
+            deployment/oracle_kafka_setup.sh \
+            deployment/oracle_kafka_deployment.sh \
+            ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/deployment/
+          
+          # Deploy Kafka configuration
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key \
+            config/oracle_kafka_config.yaml \
+            ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/config/
+          
+          # Deploy Kafka integration module
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key \
+            src/oracle_kafka_integration.py \
+            ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/src/
+          
+          # Deploy Kafka test script
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key \
+            test_oracle_kafka.py \
+            ubuntu@139.185.33.139:/home/ubuntu/ai-project-template/
+          
+          echo "✅ Kafka files deployed successfully"
+
+      - name: Execute Kafka Deployment on Oracle
+        if: steps.check-deployment.outputs.oracle_deploy == 'true'
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "🔄 Starting Kafka deployment on Oracle server..."
+            
+            cd ~/ai-project-template
+            
+            # Make deployment scripts executable
+            chmod +x deployment/oracle_kafka_setup.sh
+            chmod +x deployment/oracle_kafka_deployment.sh
+            
+            # Run Kafka deployment
+            echo "🚀 Executing Kafka deployment script..."
+            ./deployment/oracle_kafka_deployment.sh
+            
+            echo "✅ Kafka deployment completed!"
+          EOF
+
+      - name: Verify Kafka Deployment
+        if: steps.check-deployment.outputs.oracle_deploy == 'true'
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/oracle.key ubuntu@139.185.33.139 << 'EOF'
+            echo "🔍 Verifying Kafka deployment..."
+            
+            cd ~/ai-project-template
+            
+            # Check if Kafka services are running
+            echo "📊 Checking Kafka services..."
+            if sudo systemctl is-active kafka; then
+              echo "✅ Kafka service is running"
+            else
+              echo "❌ Kafka service is not running"
+              sudo systemctl status kafka --no-pager -l
+            fi
+            
+            if sudo systemctl is-active zookeeper; then
+              echo "✅ Zookeeper service is running"
+            else
+              echo "❌ Zookeeper service is not running"
+              sudo systemctl status zookeeper --no-pager -l
+            fi
+            
+            # Check if ML pipeline service is running
+            if sudo systemctl is-active ml-pipeline; then
+              echo "✅ ML Pipeline service is running"
+            else
+              echo "❌ ML Pipeline service is not running"
+              sudo systemctl status ml-pipeline --no-pager -l
+            fi
+            
+            # Test Kafka connectivity
+            echo "🧪 Testing Kafka connectivity..."
+            if python3 test_oracle_kafka.py; then
+              echo "✅ Kafka connectivity test passed"
+            else
+              echo "❌ Kafka connectivity test failed"
+            fi
+            
+            # Check Kafka monitoring dashboard
+            echo "🌐 Checking Kafka monitoring dashboard..."
+            if curl -f http://localhost:8080/health 2>/dev/null; then
+              echo "✅ Kafka monitoring dashboard is accessible"
+            else
+              echo "⚠️ Kafka monitoring dashboard is not accessible"
+            fi
+            
+            echo "🎉 Kafka deployment verification completed!"
+          EOF
+
+      - name: Skip Kafka Deployment
+        if: steps.check-deployment.outputs.oracle_deploy == 'false'
+        run: |
+          echo "Kafka deployment skipped - SSH secrets not configured"
+          echo ""
+          echo "To enable Kafka deployment, add the following secret to your repository:"
+          echo "  - ORACLE_SSH_KEY: Your SSH private key content"
+          echo ""
+          echo "Kafka deployment files are ready for manual deployment."
+
+  kafka-local-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Create Virtual Environment
+        run: |
+          echo "📦 Creating virtual environment..."
+          python -m venv venv
+          source venv/bin/activate
+          echo "✅ Virtual environment created and activated"
+
+      - name: Install Dependencies
+        run: |
+          source venv/bin/activate
+          echo "📦 Installing Python dependencies..."
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install kafka-python confluent-kafka pyyaml
+          echo "✅ Dependencies installed"
+
+      - name: Test Kafka Integration Locally
+        run: |
+          source venv/bin/activate
+          echo "🧪 Testing Kafka integration locally..."
+          
+          # Test if Kafka configuration files exist
+          if [ -f "config/oracle_kafka_config.yaml" ]; then
+            echo "✅ Oracle Kafka config found"
+          else
+            echo "❌ Oracle Kafka config not found"
+            exit 1
+          fi
+          
+          if [ -f "src/oracle_kafka_integration.py" ]; then
+            echo "✅ Oracle Kafka integration module found"
+          else
+            echo "❌ Oracle Kafka integration module not found"
+            exit 1
+          fi
+          
+          # Test Python import
+          python -c "import sys; sys.path.append('src'); from oracle_kafka_integration import OracleKafkaConfig, get_oracle_kafka_config; print('✅ Oracle Kafka integration imports successfully')"
+          
+          echo "✅ Local Kafka integration test completed"
+
+      - name: Archive Virtual Environment Info
+        uses: actions/upload-artifact@v4
+        with:
+          name: venv-info
+          path: |
+            venv/
+            requirements.txt 
