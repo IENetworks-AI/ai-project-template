@@ -52,9 +52,9 @@ def main():
         import pandas as pd
         
         logger.info("Loading example dataset (Iris)...")
-        data = load_iris()
-        X = pd.DataFrame(data.data, columns=data.feature_names)
-        y = pd.Series(data.target)
+        data = load_iris(as_frame=True)
+        X = data.data
+        y = data.target
         
         # Split data
         X_train, X_test, y_train, y_test = train_test_split(

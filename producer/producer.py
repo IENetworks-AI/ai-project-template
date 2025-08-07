@@ -5,12 +5,13 @@ from datetime import datetime
 from typing import Dict, Any, List
 import os
 import sys
+import argparse
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from kafka import KafkaProducer
-from statsbombpy import sb
+from src.dummy_football_data import DummyFootballDataGenerator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,43 +42,23 @@ class FootballEventProducer:
             logger.error(f"Failed to connect to Kafka: {e}")
             raise
     
-    def load_match_data(self, competition_id: int = 39, season_id: int = 4, match_id: int = None):
+    def load_match_data(self, home_team: str = None, away_team: str = None):
         """
-        Load match data from StatsBomb Open Data
+        Load match data from dummy data generator
         Args:
-            competition_id: Premier League = 39
-            season_id: 2021/22 = 4
-            match_id: Specific match ID (optional)
+            home_team: Home team name (optional)
+            away_team: Away team name (optional)
         """
         try:
-            # Get matches for the specified competition and season
-            matches = sb.matches(competition_id=competition_id, season_id=season_id)
+            # Use dummy data generator
+            generator = DummyFootballDataGenerator()
+            self.match_data = generator.generate_match_data(home_team, away_team)
             
-            if match_id is None:
-                # Select the first match if no specific match_id provided
-                match_id = matches.iloc[0]['match_id']
-                logger.info(f"Selected match_id: {match_id}")
-            
-            # Get events for the selected match
-            events = sb.events(match_id=match_id)
-            
-            # Get match info
-            match_info = matches[matches['match_id'] == match_id].iloc[0]
-            
-            self.match_data = {
-                'match_id': match_id,
-                'home_team': match_info['home_team_name'],
-                'away_team': match_info['away_team_name'],
-                'competition': match_info['competition_name'],
-                'season': match_info['season_name'],
-                'events': events.to_dict('records')
-            }
-            
-            logger.info(f"Loaded {len(self.match_data['events'])} events for {self.match_data['home_team']} vs {self.match_data['away_team']}")
+            logger.info(f"Generated {len(self.match_data['events'])} events for {self.match_data['home_team']} vs {self.match_data['away_team']}")
             
         except Exception as e:
-            logger.error(f"Failed to load match data: {e}")
-            # Fallback to sample data if StatsBomb fails
+            logger.error(f"Failed to generate match data: {e}")
+            # Fallback to sample data if generator fails
             self._create_sample_data()
     
     def _create_sample_data(self):
@@ -194,7 +175,8 @@ def main():
     parser.add_argument('--topic', default='live_football_events', help='Kafka topic name')
     parser.add_argument('--delay', type=float, default=1.0, help='Delay between events in seconds')
     parser.add_argument('--max-events', type=int, help='Maximum number of events to stream')
-    parser.add_argument('--match-id', type=int, help='Specific match ID to load')
+    parser.add_argument('--home-team', default=None, help='Home team name')
+    parser.add_argument('--away-team', default=None, help='Away team name')
     
     args = parser.parse_args()
     
@@ -206,7 +188,7 @@ def main():
     
     try:
         # Load match data
-        producer.load_match_data(match_id=args.match_id)
+        producer.load_match_data(home_team=args.home_team, away_team=args.away_team)
         
         # Stream events
         producer.stream_events(
