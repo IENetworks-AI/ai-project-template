@@ -12,6 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from kafka import KafkaProducer
 from src.dummy_football_data import DummyFootballDataGenerator
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -166,10 +167,19 @@ class FootballEventProducer:
             self.producer.close()
             logger.info("Kafka producer connection closed")
 
+def scheduled_stream_job(producer, args):
+    # Each scheduled run: generate new match data and stream events
+    home_team = args.home_team
+    away_team = args.away_team
+    producer.load_match_data(home_team=home_team, away_team=away_team)
+    producer.stream_events(
+        delay_seconds=args.delay,
+        max_events=args.max_events
+    )
+
 def main():
     """Main function to run the producer"""
     import argparse
-    
     parser = argparse.ArgumentParser(description='Football Event Kafka Producer')
     parser.add_argument('--kafka-broker', default='localhost:9092', help='Kafka broker address')
     parser.add_argument('--topic', default='live_football_events', help='Kafka topic name')
@@ -177,25 +187,40 @@ def main():
     parser.add_argument('--max-events', type=int, help='Maximum number of events to stream')
     parser.add_argument('--home-team', default=None, help='Home team name')
     parser.add_argument('--away-team', default=None, help='Away team name')
-    
+    parser.add_argument('--schedule-interval', type=int, help='Interval in seconds to run the job repeatedly')
+    parser.add_argument('--schedule-cron', default=None, help='Cron expression to run the job (overrides interval)')
     args = parser.parse_args()
-    
-    # Create producer
+
     producer = FootballEventProducer(
         kafka_broker=args.kafka_broker,
         topic=args.topic
     )
-    
     try:
-        # Load match data
-        producer.load_match_data(home_team=args.home_team, away_team=args.away_team)
-        
-        # Stream events
-        producer.stream_events(
-            delay_seconds=args.delay,
-            max_events=args.max_events
-        )
-        
+        if args.schedule_cron or args.schedule_interval:
+            scheduler = BackgroundScheduler()
+            if args.schedule_cron:
+                # e.g. "*/5 * * * *" for every 5 minutes
+                from apscheduler.triggers.cron import CronTrigger
+                scheduler.add_job(lambda: scheduled_stream_job(producer, args), CronTrigger.from_crontab(args.schedule_cron))
+                logger.info(f"Scheduled job with cron: {args.schedule_cron}")
+            else:
+                scheduler.add_job(lambda: scheduled_stream_job(producer, args), 'interval', seconds=args.schedule_interval)
+                logger.info(f"Scheduled job every {args.schedule_interval} seconds")
+            scheduler.start()
+            logger.info("Scheduler started. Press Ctrl+C to exit.")
+            try:
+                while True:
+                    time.sleep(1)
+            except (KeyboardInterrupt, SystemExit):
+                logger.info("Scheduler stopped by user")
+                scheduler.shutdown()
+        else:
+            # Run once (legacy mode)
+            producer.load_match_data(home_team=args.home_team, away_team=args.away_team)
+            producer.stream_events(
+                delay_seconds=args.delay,
+                max_events=args.max_events
+            )
     except KeyboardInterrupt:
         logger.info("Producer stopped by user")
     except Exception as e:

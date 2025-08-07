@@ -541,3 +541,25 @@ The system demonstrates modern MLOps practices including:
 - Cloud-native deployment
 
 For questions or issues, please refer to the troubleshooting section or create an issue in the repository. 
+
+## ⚡ Scheduled Producer: Showcasing Kafka & Airflow Collaboration
+
+The producer can now be run on a schedule (interval or cron) using APScheduler. This allows you to:
+- Continuously generate and stream new football match events to Kafka every N seconds (or on a cron schedule).
+- The dashboard consumes these events in real time for live stats and timeline.
+- Airflow can be configured to run batch jobs (e.g., retraining, analytics) on a schedule or in response to new data in Kafka.
+
+### Example: Run Producer Every 5 Seconds
+```bash
+python producer/producer.py --kafka-broker localhost:9092 --delay 1.0 --max-events 10 --schedule-interval 5
+```
+
+### Example: Run Producer on a Cron Schedule (every minute)
+```bash
+python producer/producer.py --kafka-broker localhost:9092 --delay 1.0 --max-events 10 --schedule-cron "* * * * *"
+```
+
+**How this helps:**
+- Kafka enables real-time streaming to the dashboard (for live updates) and to Airflow (for batch ML/data pipelines).
+- Airflow can be scheduled to process new data from Kafka, retrain models, or trigger analytics, showing true MLOps collaboration.
+- This setup demonstrates how event-driven and scheduled workflows can coexist and power modern data/ML systems. 
