@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Match Predictions Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .dashboard-container {
+            padding: 20px;
+            margin-left: 280px;
+            transition: margin-left 0.3s;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            overflow-y: auto;
+            transition: transform 0.3s;
+        }
+        .sidebar.collapsed {
+            transform: translateX(-280px);
+        }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        .sidebar-section {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .sidebar-section h6 {
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .match-selector {
+            margin-bottom: 10px;
+        }
+        .match-option {
+            padding: 8px 12px;
+            margin: 2px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        .match-option:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #667eea;
+        }
+        .match-option.selected {
+            background: #667eea;
+            color: white;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online {
+            background-color: #28a745;
+        }
+        .status-offline {
+            background-color: #dc3545;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 15px 20px;
+        }
+        .stats-card {
+            text-align: center;
+            padding: 20px;
+        }
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .team-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+        .score {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .chart-container {
+            height: 400px;
+            margin: 20px 0;
+        }
+        .refresh-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            margin-left: 280px;
+            transition: margin-left 0.3s;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #667eea !important;
+        }
+        .live-indicator {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .sidebar-toggle {
+            position: fixed;
+            top: 20px;
+            left: 290px;
+            z-index: 1001;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .sidebar-toggle:hover {
+            background: #5a6fd8;
+            transform: scale(1.1);
+        }
+        .sidebar-toggle.collapsed {
+            left: 20px;
+        }
+        .airflow-controls {
+            margin-top: 10px;
+        }
+        .airflow-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            margin: 2px;
+            cursor: pointer;
+        }
+        .airflow-btn:hover {
+            background: #218838;
+        }
+        .event-list {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+        }
+        .event-item {
+            padding: 5px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .event-time {
+            color: #667eea;
+            font-weight: bold;
+        }
+        .event-type {
+            color: #666;
+        }
+        .event-team {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Toggle Button -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h5><i class="fas fa-futbol"></i> Football Dashboard</h5>
+            <small>Real-time Predictions & Analytics</small>
+        </div>
+
+        <!-- Match Selection -->
+        <div class="sidebar-section">
+            <h6><i class="fas fa-gamepad"></i> Select Match</h6>
+            <div class="match-selector" id="match-selector">
+                <!-- Matches will be loaded here -->
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="sidebar-section">
+            <h6><i class="fas fa-server"></i> System Status</h6>
+            <div id="system-status">
+                <div><span class="status-indicator status-online"></span>Dashboard</div>
+                <div><span class="status-indicator" id="kafka-status">-</span>Kafka</div>
+                <div><span class="status-indicator" id="api-status">-</span>API</div>
+                <div><span class="status-indicator" id="airflow-status">-</span>Airflow</div>
+            </div>
+        </div>
+
+        <!-- Airflow Controls -->
+        <div class="sidebar-section">
+            <h6><i class="fas fa-cogs"></i> Airflow Controls</h6>
+            <div class="airflow-controls">
+                <button class="airflow-btn" onclick="openAirflow()">Open Airflow</button>
+                <button class="airflow-btn" onclick="refreshDAGs()">Refresh DAGs</button>
+            </div>
+            <div id="airflow-dags" style="margin-top: 10px; font-size: 0.8rem;">
+                <!-- DAGs will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Recent Events -->
+        <div class="sidebar-section">
+            <h6><i class="fas fa-stream"></i> Recent Events</h6>
+            <div class="event-list" id="recent-events">
+                <!-- Events will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="sidebar-section">
+            <h6><i class="fas fa-bolt"></i> Quick Actions</h6>
+            <button class="refresh-btn" onclick="refreshData()" style="width: 100%; margin-bottom: 10px;">
+                <i class="fas fa-sync-alt"></i> Refresh All
+            </button>
+            <button class="refresh-btn" onclick="generateNewMatch()" style="width: 100%; background: #28a745;">
+                <i class="fas fa-plus"></i> New Match
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="dashboard-container" id="main-content">
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-futbol"></i> Football Predictions Dashboard
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <span class="navbar-text">
+                        <span class="status-indicator status-online live-indicator"></span>
+                        LIVE
+                    </span>
+                </div>
+            </div>
+        </nav>
+
+        <div class="row">
+            <!-- Match Info -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-gamepad"></i> Live Match</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="team-name" id="home-team">Manchester United</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="score" id="score">1 - 0</div>
+                                <div class="text-muted" id="minute">45'</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="team-name" id="away-team">Liverpool</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Match Statistics -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Match Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stats-card">
+                                    <div class="stat-value" id="home-shots">8</div>
+                                    <div class="stat-label">Shots</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stats-card">
+                                    <div class="stat-value" id="away-shots">3</div>
+                                    <div class="stat-label">Shots</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stats-card">
+                                    <div class="stat-value" id="home-possession">65%</div>
+                                    <div class="stat-label">Possession</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stats-card">
+                                    <div class="stat-value" id="away-possession">35%</div>
+                                    <div class="stat-label">Possession</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="match-stats-chart" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Win Probability -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Win Probability</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="stats-card">
+                                    <div class="stat-value" id="home-win-prob">45%</div>
+                                    <div class="stat-label">Home Win</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stats-card">
+                                    <div class="stat-value" id="draw-prob">25%</div>
+                                    <div class="stat-label">Draw</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stats-card">
+                                    <div class="stat-value" id="away-win-prob">30%</div>
+                                    <div class="stat-label">Away Win</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="win-probability-chart" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Possession Chart -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-circle"></i> Possession</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="possession-chart" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Match Timeline -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-clock"></i> Match Timeline</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="timeline-chart" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let charts = {};
+        let selectedMatch = '{{ selected_match }}';
+        let sidebarCollapsed = false;
+
+        function toggleSidebar() {
+            sidebarCollapsed = !sidebarCollapsed;
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const navbar = document.querySelector('.navbar');
+            const toggleBtn = document.querySelector('.sidebar-toggle');
+            
+            if (sidebarCollapsed) {
+                sidebar.classList.add('collapsed');
+                mainContent.style.marginLeft = '20px';
+                navbar.style.marginLeft = '20px';
+                toggleBtn.classList.add('collapsed');
+            } else {
+                sidebar.classList.remove('collapsed');
+                mainContent.style.marginLeft = '280px';
+                navbar.style.marginLeft = '280px';
+                toggleBtn.classList.remove('collapsed');
+            }
+        }
+
+        function loadMatches() {
+            fetch('/api/matches')
+                .then(response => response.json())
+                .then(matches => {
+                    const selector = document.getElementById('match-selector');
+                    selector.innerHTML = '';
+                    
+                    matches.forEach(match => {
+                        const matchDiv = document.createElement('div');
+                        matchDiv.className = `match-option ${match.id === selectedMatch ? 'selected' : ''}`;
+                        matchDiv.innerHTML = `
+                            <div><strong>${match.home}</strong></div>
+                            <div style="font-size: 0.8rem; color: #666;">vs ${match.away}</div>
+                            <div style="font-size: 0.7rem; color: #999;">${match.competition}</div>
+                        `;
+                        matchDiv.onclick = () => selectMatch(match.id);
+                        selector.appendChild(matchDiv);
+                    });
+                });
+        }
+
+        function selectMatch(matchId) {
+            fetch('/api/select-match', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ match_id: matchId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    selectedMatch = matchId;
+                    loadMatches();
+                    refreshData();
+                }
+            });
+        }
+
+        function updateMatchStats(data) {
+            $('#home-team').text(data.home_team);
+            $('#away-team').text(data.away_team);
+            $('#score').text(data.home_goals + ' - ' + data.away_goals);
+            $('#minute').text(data.current_minute + "'");
+            $('#home-shots').text(data.home_shots);
+            $('#away-shots').text(data.away_shots);
+            $('#home-possession').text(data.home_possession + '%');
+            $('#away-possession').text(data.away_possession + '%');
+        }
+
+        function updatePrediction(data) {
+            $('#home-win-prob').text(Math.round(data.home_win_probability * 100) + '%');
+            $('#away-win-prob').text(Math.round(data.away_win_probability * 100) + '%');
+            $('#draw-prob').text(Math.round(data.draw_probability * 100) + '%');
+        }
+
+        function updateCharts() {
+            // Update match stats chart
+            fetch('/api/charts/match-stats')
+                .then(response => response.json())
+                .then(data => {
+                    const chartData = JSON.parse(data.chart);
+                    if (charts.matchStats) {
+                        Plotly.react('match-stats-chart', chartData.data, chartData.layout);
+                    } else {
+                        charts.matchStats = Plotly.newPlot('match-stats-chart', chartData.data, chartData.layout);
+                    }
+                });
+
+            // Update win probability chart
+            fetch('/api/charts/win-probability')
+                .then(response => response.json())
+                .then(data => {
+                    const chartData = JSON.parse(data.chart);
+                    if (charts.winProbability) {
+                        Plotly.react('win-probability-chart', chartData.data, chartData.layout);
+                    } else {
+                        charts.winProbability = Plotly.newPlot('win-probability-chart', chartData.data, chartData.layout);
+                    }
+                });
+
+            // Update possession chart
+            fetch('/api/charts/possession')
+                .then(response => response.json())
+                .then(data => {
+                    const chartData = JSON.parse(data.chart);
+                    if (charts.possession) {
+                        Plotly.react('possession-chart', chartData.data, chartData.layout);
+                    } else {
+                        charts.possession = Plotly.newPlot('possession-chart', chartData.data, chartData.layout);
+                    }
+                });
+
+            // Update timeline chart
+            fetch('/api/charts/timeline')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.chart) {
+                        const chartData = JSON.parse(data.chart);
+                        if (charts.timeline) {
+                            Plotly.react('timeline-chart', chartData.data, chartData.layout);
+                        } else {
+                            charts.timeline = Plotly.newPlot('timeline-chart', chartData.data, chartData.layout);
+                        }
+                    }
+                });
+        }
+
+        function updateSystemStatus() {
+            fetch('/api/system/status')
+                .then(response => response.json())
+                .then(data => {
+                    $('#kafka-status').text(data.kafka.status === 'online' ? 'Online' : 'Offline')
+                        .removeClass('status-online status-offline')
+                        .addClass(data.kafka.status === 'online' ? 'status-online' : 'status-offline');
+                    
+                    $('#api-status').text(data.api.status === 'online' ? 'Online' : 'Offline')
+                        .removeClass('status-online status-offline')
+                        .addClass(data.api.status === 'online' ? 'status-online' : 'status-offline');
+                    
+                    $('#airflow-status').text(data.airflow.status === 'online' ? 'Online' : 'Offline')
+                        .removeClass('status-online status-offline')
+                        .addClass(data.airflow.status === 'online' ? 'status-online' : 'status-offline');
+                });
+
+            fetch('/api/kafka/events')
+                .then(response => response.json())
+                .then(events => {
+                    const eventsContainer = document.getElementById('recent-events');
+                    eventsContainer.innerHTML = '';
+                    
+                    events.slice(-10).reverse().forEach(event => {
+                        const eventDiv = document.createElement('div');
+                        eventDiv.className = 'event-item';
+                        eventDiv.innerHTML = `
+                            <div class="event-time">${event.minute}'</div>
+                            <div class="event-type">${event.type?.name || 'Unknown'}</div>
+                            <div class="event-team">${event.team?.name || 'Unknown'}</div>
+                        `;
+                        eventsContainer.appendChild(eventDiv);
+                    });
+                });
+        }
+
+        function refreshData() {
+            // Update match stats
+            fetch('/api/match-stats')
+                .then(response => response.json())
+                .then(data => {
+                    updateMatchStats(data);
+                });
+
+            // Update prediction
+            fetch('/api/prediction')
+                .then(response => response.json())
+                .then(data => {
+                    updatePrediction(data);
+                });
+
+            // Update charts
+            updateCharts();
+
+            // Update system status
+            updateSystemStatus();
+        }
+
+        function generateNewMatch() {
+            // Generate new random match data
+            refreshData();
+        }
+
+        function openAirflow() {
+            window.open('http://localhost:8080', '_blank');
+        }
+
+        function refreshDAGs() {
+            fetch('/api/airflow/dags')
+                .then(response => response.json())
+                .then(dags => {
+                    const dagsContainer = document.getElementById('airflow-dags');
+                    dagsContainer.innerHTML = '';
+                    
+                    dags.forEach(dag => {
+                        const dagDiv = document.createElement('div');
+                        dagDiv.style.marginBottom = '5px';
+                        dagDiv.innerHTML = `
+                            <div style="font-weight: bold;">${dag.dag_id}</div>
+                            <div style="font-size: 0.7rem; color: #666;">${dag.is_paused ? 'Paused' : 'Active'}</div>
+                        `;
+                        dagsContainer.appendChild(dagDiv);
+                    });
+                });
+        }
+
+        // Initial load
+        $(document).ready(function() {
+            loadMatches();
+            refreshData();
+            refreshDAGs();
+
+            // Auto-refresh every 5 seconds
+            setInterval(refreshData, 5000);
+            
+            // Refresh DAGs every 30 seconds
+            setInterval(refreshDAGs, 30000);
+        });
+    </script>
+</body>
+</html> 

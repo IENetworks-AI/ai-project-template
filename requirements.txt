@@ -38,6 +38,8 @@ statsbombpy>=1.0.0
 
 # Dashboard
 streamlit>=1.28.0
+flask>=2.3.0
+plotly>=5.0.0
 
 # Additional utilities
 python-dotenv>=1.0.0
