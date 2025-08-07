@@ -19,6 +19,7 @@ from typing import List, Dict, Optional
 import os
 import sys
 import random
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -290,6 +291,20 @@ def update_match_stats_for_selected_match(match_id: str):
             'timestamp': datetime.now().isoformat()
         }
 
+def scheduled_main_task():
+    """
+    Scheduled job to simulate Kafka + Airflow collaboration.
+    - Updates match stats (simulating Kafka producer/consumer)
+    - Triggers Airflow DAG (simulating orchestration)
+    """
+    update_match_stats_for_selected_match('man_utd_liverpool')
+    try:
+        # Simulate Airflow orchestration
+        trigger_airflow_dag('football_prediction_pipeline')
+    except Exception as e:
+        print(f"[SCHEDULED] Airflow trigger error: {e}")
+    print(f"[SCHEDULED] Updated match stats and triggered Airflow at {datetime.now().isoformat()}")
+
 @app.route('/')
 def index():
     """Main dashboard page"""
@@ -522,11 +537,14 @@ def get_available_matches():
     return jsonify(DEFAULT_MATCHES)
 
 if __name__ == '__main__':
-    # Start Kafka consumer thread
+    # Start Kafka consumer thread (simulates Kafka consumer)
     start_kafka_thread()
-    
-    # Initialize with default match
+    # Initialize with default match (simulates initial Kafka event)
     update_match_stats_for_selected_match('man_utd_liverpool')
-    
+    # Start APScheduler for scheduled jobs
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(scheduled_main_task, 'interval', seconds=5)  # or use 'cron', ...
+    scheduler.start()
+    print("APScheduler started: scheduled_main_task runs every 5 seconds.")
     # Run Flask app
     app.run(host='0.0.0.0', port=8501, debug=True) 
