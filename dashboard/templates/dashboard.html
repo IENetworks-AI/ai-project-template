@@ -507,21 +507,32 @@
             });
         }
 
+        function animateValueChange(id, newValue) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (el.textContent !== newValue) {
+                el.textContent = newValue;
+                el.style.transition = 'background 0.3s';
+                el.style.background = '#ffe066';
+                setTimeout(() => { el.style.background = ''; }, 500);
+            }
+        }
+
         function updateMatchStats(data) {
-            $('#home-team').text(data.home_team);
-            $('#away-team').text(data.away_team);
-            $('#score').text(data.home_goals + ' - ' + data.away_goals);
-            $('#minute').text(data.current_minute + "'");
-            $('#home-shots').text(data.home_shots);
-            $('#away-shots').text(data.away_shots);
-            $('#home-possession').text(data.home_possession + '%');
-            $('#away-possession').text(data.away_possession + '%');
+            animateValueChange('home-team', data.home_team);
+            animateValueChange('away-team', data.away_team);
+            animateValueChange('score', data.home_goals + ' - ' + data.away_goals);
+            animateValueChange('minute', data.current_minute + "'");
+            animateValueChange('home-shots', data.home_shots);
+            animateValueChange('away-shots', data.away_shots);
+            animateValueChange('home-possession', data.home_possession + '%');
+            animateValueChange('away-possession', data.away_possession + '%');
         }
 
         function updatePrediction(data) {
-            $('#home-win-prob').text(Math.round(data.home_win_probability * 100) + '%');
-            $('#away-win-prob').text(Math.round(data.away_win_probability * 100) + '%');
-            $('#draw-prob').text(Math.round(data.draw_probability * 100) + '%');
+            animateValueChange('home-win-prob', Math.round(data.home_win_probability * 100) + '%');
+            animateValueChange('away-win-prob', Math.round(data.away_win_probability * 100) + '%');
+            animateValueChange('draw-prob', Math.round(data.draw_probability * 100) + '%');
         }
 
         function updateCharts() {
@@ -710,9 +721,37 @@
             refreshDAGs();
             updateRecentEvents(); // Call updateRecentEvents here
 
-            // Auto-refresh every 5 seconds
-            setInterval(refreshData, 5000);
-            
+            // Auto-refresh match stats, prediction, and timeline every 1 second
+            setInterval(function() {
+                // Only update match stats and prediction every 1s
+                fetch('/api/match-stats')
+                    .then(response => response.json())
+                    .then(data => { updateMatchStats(data); });
+                fetch('/api/prediction')
+                    .then(response => response.json())
+                    .then(data => { updatePrediction(data); });
+                // Timeline chart
+                fetch('/api/charts/timeline')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.chart) {
+                            const chartData = JSON.parse(data.chart);
+                            if (charts.timeline) {
+                                Plotly.react('timeline-chart', chartData.data, chartData.layout);
+                            } else {
+                                charts.timeline = Plotly.newPlot('timeline-chart', chartData.data, chartData.layout);
+                            }
+                        }
+                    });
+            }, 1000);
+
+            // Other charts and system status every 5 seconds
+            setInterval(function() {
+                updateCharts();
+                updateSystemStatus();
+                updateRecentEvents();
+            }, 5000);
+
             // Refresh DAGs every 30 seconds
             setInterval(refreshDAGs, 30000);
         });
