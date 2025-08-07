@@ -1,5 +1,88 @@
 # Football Predictions MLOps Workflow
 
+## 📊 Data Pipeline Flow
+
+```mermaid
+graph TD
+    A[Dummy Data Generator] -->|Football Events| B(Kafka KRaft)
+    B --> C[Dashboard (Flask)]
+    B --> D[Airflow]
+    C --> E[Model API (FastAPI)]
+    D --> E
+    E --> C
+```
+
+### Step-by-Step Flow
+1. **Dummy Data Generator**: Simulates football match events and sends them to Kafka.
+2. **Kafka (KRaft)**: Streams events in real-time to all consumers.
+3. **Dashboard (Flask)**: Consumes Kafka events for live stats, match timeline, and predictions.
+4. **Airflow**: Consumes Kafka events for ML pipeline orchestration (feature engineering, retraining, monitoring).
+5. **Model API (FastAPI)**: Serves predictions to the dashboard and is used by Airflow for batch scoring.
+6. **Dashboard**: Displays all results, system status, and allows Airflow DAG management.
+
+---
+
+## 🚀 Local Run Instructions
+
+### 1. Create and Activate Virtual Environment
+```bash
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On Mac/Linux:
+source venv/bin/activate
+```
+
+### 2. Install Requirements
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Start Kafka (KRaft) Locally
+- Recommended: Use Docker Compose for Kafka, API, Dashboard, Airflow.
+```bash
+docker-compose up -d kafka
+```
+
+### 4. Run Producer Locally
+```bash
+python producer/producer.py --kafka-broker localhost:9092 --delay 2.0 --max-events 50
+```
+
+### 5. Run API Locally
+```bash
+uvicorn api.app:app --reload --port 8000
+```
+
+### 6. Run Dashboard Locally
+```bash
+python dashboard/flask_app.py
+```
+
+### 7. Run Airflow Locally (Optional)
+- Airflow is best run via Docker Compose, but you can run it locally if you have it installed:
+```bash
+airflow db init
+airflow webserver &
+airflow scheduler &
+```
+
+---
+
+## ☁️ Oracle Server Deployment
+
+1. **Install Docker & Docker Compose** (see previous instructions)
+2. **Clone the repo**
+3. **Configure environment** (see .env or docker-compose.yml)
+4. **Run:**
+```bash
+docker-compose up -d --build
+```
+5. **Open required ports** (8501, 8000, 8080, 9092)
+6. **Access services** via public IP.
+
+---
+
 ## 🏈 System Overview
 
 This is a comprehensive MLOps system for real-time football match predictions with the following components:

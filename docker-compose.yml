@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Kafka Broker (KRaft mode)
+  # Kafka Broker (KRaft mode, no Zookeeper)
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     hostname: kafka
@@ -47,7 +47,7 @@ services:
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
       - ./data:/opt/airflow/data
-      - airflow-db:/usr/local/airflow/
+      - ./airflow_db:/usr/local/airflow/
     command: webserver
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
@@ -73,7 +73,7 @@ services:
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
       - ./data:/opt/airflow/data
-      - airflow-db:/usr/local/airflow/
+      - ./airflow_db:/usr/local/airflow/
     command: scheduler
     healthcheck:
       test: ["CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"']
@@ -92,6 +92,7 @@ services:
     environment:
       - MODEL_PATH=/app/models/sales_prediction_model.joblib
       - SCALER_PATH=/app/models/feature_scaler.joblib
+      - KAFKA_BROKER=kafka:9092
     volumes:
       - ./models:/app/models
       - ./data:/app/data
@@ -125,5 +126,4 @@ services:
       retries: 3
 
 volumes:
-  airflow-db:
   kafka-data: 

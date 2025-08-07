@@ -259,6 +259,19 @@
             </div>
         </div>
 
+        <!-- How it Works -->
+        <div class="sidebar-section">
+            <h6><i class="fas fa-info-circle"></i> How it Works</h6>
+            <button class="refresh-btn" onclick="openSystemOverview()" style="width:100%;margin-bottom:10px;">
+                <i class="fas fa-diagram-project"></i> System Overview
+            </button>
+            <div style="font-size:0.9rem;color:#555;">
+                <b>Kafka:</b> Real-time event streaming.<br>
+                <b>Airflow:</b> ML pipeline orchestration.<br>
+                <b>API:</b> Model predictions.<br>
+            </div>
+        </div>
+
         <!-- Recent Events -->
         <div class="sidebar-section">
             <h6><i class="fas fa-stream"></i> Recent Events</h6>
@@ -421,6 +434,15 @@
         </div>
     </div>
 
+    <!-- System Overview Modal -->
+    <div class="modal" id="system-overview-modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-button" onclick="document.getElementById('system-overview-modal').style.display='none'">&times;</span>
+            <h2>System Overview</h2>
+            <div id="system-overview-content"></div>
+        </div>
+    </div>
+
     <script>
         let charts = {};
         let selectedMatch = '{{ selected_match }}';
@@ -571,23 +593,7 @@
                         .addClass(data.airflow.status === 'online' ? 'status-online' : 'status-offline');
                 });
 
-            fetch('/api/kafka/events')
-                .then(response => response.json())
-                .then(events => {
-                    const eventsContainer = document.getElementById('recent-events');
-                    eventsContainer.innerHTML = '';
-                    
-                    events.slice(-10).reverse().forEach(event => {
-                        const eventDiv = document.createElement('div');
-                        eventDiv.className = 'event-item';
-                        eventDiv.innerHTML = `
-                            <div class="event-time">${event.minute}'</div>
-                            <div class="event-type">${event.type?.name || 'Unknown'}</div>
-                            <div class="event-team">${event.team?.name || 'Unknown'}</div>
-                        `;
-                        eventsContainer.appendChild(eventDiv);
-                    });
-                });
+            // updateRecentEvents(); // This function is now called directly in $(document).ready
         }
 
         function refreshData() {
@@ -640,11 +646,69 @@
                 });
         }
 
+        function openSystemOverview() {
+            fetch('/api/system/overview')
+                .then(response => response.json())
+                .then(data => {
+                    let modal = document.getElementById('system-overview-modal');
+                    if (!modal) {
+                        modal = document.createElement('div');
+                        modal.id = 'system-overview-modal';
+                        modal.style.position = 'fixed';
+                        modal.style.top = '0';
+                        modal.style.left = '0';
+                        modal.style.width = '100vw';
+                        modal.style.height = '100vh';
+                        modal.style.background = 'rgba(0,0,0,0.6)';
+                        modal.style.zIndex = '2000';
+                        modal.innerHTML = `
+                            <div style="background:white;max-width:600px;margin:60px auto;padding:30px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.2);position:relative;">
+                                <button onclick="document.getElementById('system-overview-modal').remove()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:1.5rem;">&times;</button>
+                                <h4>System Overview</h4>
+                                <div id="system-overview-content"></div>
+                            </div>
+                        `;
+                        document.body.appendChild(modal);
+                    }
+                    let content = `<b>Architecture:</b> ${data.architecture}<br><b>Diagram:</b> ${data.diagram}<br><br><b>Kafka:</b> ${data.kafka}<br><b>Airflow:</b> ${data.airflow}<br><b>Dashboard:</b> ${data.dashboard}<br><b>API:</b> ${data.api}`;
+                    document.getElementById('system-overview-content').innerHTML = content;
+                });
+        }
+
+        function updateRecentEvents() {
+            fetch('/api/events')
+                .then(response => response.json())
+                .then(events => {
+                    const eventsContainer = document.getElementById('recent-events');
+                    eventsContainer.innerHTML = '';
+                    events.slice(-10).reverse().forEach(event => {
+                        const eventDiv = document.createElement('div');
+                        eventDiv.className = 'event-item';
+                        let color = '#1f77b4';
+                        if (event.type === 'Goal') color = '#28a745';
+                        if (event.type === 'Card') color = '#ffc107';
+                        if (event.type === 'Foul') color = '#dc3545';
+                        eventDiv.style.background = color + '22';
+                        eventDiv.style.borderLeft = '6px solid ' + color;
+                        eventDiv.style.marginBottom = '8px';
+                        eventDiv.style.fontSize = '1rem';
+                        eventDiv.style.padding = '10px 12px';
+                        eventDiv.innerHTML = `
+                            <b>${event.minute}'</b> <span style="color:${color};font-weight:bold;">${event.type}</span><br>
+                            <span style="font-size:0.95em;">${event.team} - ${event.player}</span><br>
+                            <span style="font-size:0.9em;color:#555;">${event.outcome !== 'N/A' ? event.outcome : ''}</span>
+                        `;
+                        eventsContainer.appendChild(eventDiv);
+                    });
+                });
+        }
+
         // Initial load
         $(document).ready(function() {
             loadMatches();
             refreshData();
             refreshDAGs();
+            updateRecentEvents(); // Call updateRecentEvents here
 
             // Auto-refresh every 5 seconds
             setInterval(refreshData, 5000);

@@ -477,6 +477,32 @@ def get_system_status():
         }
     })
 
+@app.route('/api/system/overview')
+def system_overview():
+    """Return system architecture and explanation for frontend modal"""
+    return jsonify({
+        "architecture": "Kafka streams football events from the producer to the dashboard and Airflow. Airflow orchestrates ML pipelines and consumes events for retraining and monitoring. The API serves predictions to the dashboard.",
+        "diagram": "Producer -> Kafka -> [Dashboard, Airflow] -> API -> Dashboard",
+        "kafka": "Kafka is used for real-time event streaming. The producer sends football match events to Kafka. The dashboard and Airflow consume these events for live updates and pipeline orchestration.",
+        "airflow": "Airflow orchestrates the ML pipelines. It can be triggered from the dashboard and monitors the health and execution of data workflows.",
+        "dashboard": "The dashboard displays live match stats, predictions, and system status. It consumes Kafka events and interacts with the API and Airflow.",
+        "api": "The API serves model predictions and exposes health endpoints."
+    })
+
+@app.route('/api/events')
+def get_events():
+    """Get recent Kafka events, formatted for frontend cards"""
+    formatted = []
+    for event in kafka_events[-20:]:
+        formatted.append({
+            'minute': event.get('minute', 'N/A'),
+            'type': event.get('type', {}).get('name', 'N/A'),
+            'team': event.get('team', {}).get('name', 'N/A'),
+            'player': event.get('player', {}).get('name', 'N/A'),
+            'outcome': event.get('shot', {}).get('outcome', {}).get('name') if event.get('type', {}).get('name') == 'Shot' else event.get('card', {}).get('name', 'N/A') if event.get('type', {}).get('name') == 'Card' else 'N/A',
+        })
+    return jsonify(formatted)
+
 @app.route('/health')
 def health():
     """Health check endpoint"""
